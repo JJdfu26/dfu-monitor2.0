@@ -1,0 +1,1133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DFU Monitor — Mice Labs</title>
+
+<!-- ============================================================
+  ✏️  PASTE YOUR SUPABASE DETAILS HERE (lines 18 & 19)
+  Get them from: Supabase Dashboard → Settings → API
+============================================================ -->
+<script>
+  const SUPABASE_URL      = 'YOUR_SUPABASE_URL';
+  const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY';
+</script>
+<!-- ============================================================ -->
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root {
+  --c-bg:#F0EDE6;--c-surface:#FAF8F4;--c-card:#FFFFFF;
+  --c-primary:#1B4F72;--c-accent:#E8734A;--c-success:#2E7D5E;
+  --c-warn:#B5631A;--c-danger:#A63228;--c-text:#1C1917;
+  --c-muted:#6B6560;--c-border:#DDD8D0;--c-overlay:rgba(28,25,23,0.55);
+  --r-sm:8px;--r-md:12px;--r-lg:18px;--r-xl:24px;
+  --shadow:0 2px 16px rgba(28,25,23,0.08),0 1px 4px rgba(28,25,23,0.06);
+  --shadow-lg:0 8px 40px rgba(28,25,23,0.14);
+  --font-display:'DM Serif Display',Georgia,serif;
+  --font-body:'DM Sans',system-ui,sans-serif;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--font-body);background:var(--c-bg);color:var(--c-text);min-height:100vh;font-size:15px;line-height:1.6}
+.view{display:none;min-height:100vh}
+.view.active{display:flex;flex-direction:column}
+#view-splash{align-items:center;justify-content:center;background:var(--c-primary);gap:20px;position:relative}
+.splash-logo{width:88px;height:88px;background:rgba(255,255,255,0.12);border-radius:24px;display:flex;align-items:center;justify-content:center;font-size:44px;animation:splashPop 0.7s cubic-bezier(0.34,1.56,0.64,1) both}
+.splash-title{font-family:var(--font-display);font-size:2.4rem;color:#fff;letter-spacing:-0.5px;animation:fadeUp 0.5s 0.3s ease both}
+.splash-sub{color:rgba(255,255,255,0.6);font-size:0.95rem;font-weight:300;animation:fadeUp 0.5s 0.45s ease both}
+.splash-brand{position:absolute;bottom:40px;color:rgba(255,255,255,0.4);font-size:0.8rem;letter-spacing:1px;text-transform:uppercase;animation:fadeUp 0.5s 0.6s ease both}
+@keyframes splashPop{from{transform:scale(0.7);opacity:0}to{transform:scale(1);opacity:1}}
+@keyframes fadeUp{from{transform:translateY(12px);opacity:0}to{transform:translateY(0);opacity:1}}
+#view-auth{align-items:center;justify-content:center;padding:24px;background:var(--c-bg)}
+.auth-card{background:var(--c-card);border-radius:var(--r-xl);box-shadow:var(--shadow-lg);padding:40px 36px;width:100%;max-width:420px;animation:fadeUp 0.4s ease both}
+.auth-logo{font-size:28px;margin-bottom:4px}
+.auth-title{font-family:var(--font-display);font-size:1.9rem;color:var(--c-primary);line-height:1.2;margin-bottom:6px}
+.auth-sub{color:var(--c-muted);font-size:0.9rem;margin-bottom:28px}
+.auth-tabs{display:flex;background:var(--c-bg);border-radius:var(--r-md);padding:4px;margin-bottom:24px;gap:4px}
+.auth-tab{flex:1;padding:9px;border:none;background:transparent;border-radius:9px;font-family:var(--font-body);font-size:0.9rem;font-weight:500;color:var(--c-muted);cursor:pointer;transition:all 0.2s}
+.auth-tab.active{background:var(--c-card);color:var(--c-primary);box-shadow:var(--shadow)}
+.form-group{margin-bottom:16px}
+label{display:block;font-size:0.82rem;font-weight:600;color:var(--c-text);margin-bottom:6px;letter-spacing:0.3px;text-transform:uppercase}
+input[type=text],input[type=email],input[type=password],input[type=number],textarea,select{width:100%;padding:12px 14px;border:1.5px solid var(--c-border);border-radius:var(--r-md);font-family:var(--font-body);font-size:0.95rem;color:var(--c-text);background:var(--c-surface);transition:border-color 0.2s,box-shadow 0.2s;outline:none}
+input:focus,textarea:focus,select:focus{border-color:var(--c-primary);box-shadow:0 0 0 3px rgba(27,79,114,0.1)}
+.field-error{color:var(--c-danger);font-size:0.8rem;margin-top:4px}
+.hint{color:var(--c-muted);font-size:0.8rem;margin-top:4px}
+.role-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px}
+.role-card{border:2px solid var(--c-border);border-radius:var(--r-lg);padding:16px 12px;text-align:center;cursor:pointer;transition:all 0.2s;background:var(--c-surface)}
+.role-card:hover{border-color:var(--c-primary)}
+.role-card.selected{border-color:var(--c-primary);background:#EBF3FA}
+.role-card .r-icon{font-size:28px;margin-bottom:6px}
+.role-card .r-title{font-weight:600;font-size:0.9rem;color:var(--c-text)}
+.role-card .r-desc{font-size:0.75rem;color:var(--c-muted);margin-top:2px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:13px 22px;border:none;border-radius:var(--r-md);font-family:var(--font-body);font-size:0.95rem;font-weight:600;cursor:pointer;transition:all 0.18s;text-decoration:none;min-height:48px;white-space:nowrap}
+.btn:disabled{opacity:0.5;cursor:not-allowed}
+.btn-primary{background:var(--c-primary);color:#fff}
+.btn-primary:hover:not(:disabled){background:#15405D;transform:translateY(-1px);box-shadow:0 4px 16px rgba(27,79,114,0.3)}
+.btn-accent{background:var(--c-accent);color:#fff}
+.btn-accent:hover:not(:disabled){background:#D4622F;transform:translateY(-1px)}
+.btn-ghost{background:transparent;color:var(--c-primary);border:1.5px solid var(--c-border)}
+.btn-ghost:hover:not(:disabled){background:var(--c-bg);border-color:var(--c-primary)}
+.btn-full{width:100%}
+.btn-sm{padding:8px 14px;font-size:0.85rem;min-height:36px}
+#view-app{flex-direction:column;background:var(--c-bg)}
+.topbar{background:var(--c-card);border-bottom:1px solid var(--c-border);padding:0 24px;height:60px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;box-shadow:0 1px 8px rgba(28,25,23,0.06)}
+.topbar-brand{font-family:var(--font-display);font-size:1.25rem;color:var(--c-primary);display:flex;align-items:center;gap:8px}
+.topbar-right{display:flex;align-items:center;gap:12px}
+.avatar{width:34px;height:34px;border-radius:50%;background:var(--c-primary);color:#fff;font-size:0.8rem;font-weight:700;display:flex;align-items:center;justify-content:center}
+.app-content{flex:1;padding:28px 24px;max-width:900px;margin:0 auto;width:100%}
+.page{display:none}
+.page.active{display:block;animation:fadeUp 0.3s ease both}
+.card{background:var(--c-card);border-radius:var(--r-lg);border:1px solid var(--c-border);padding:24px;box-shadow:var(--shadow)}
+.card+.card{margin-top:16px}
+.card-title{font-family:var(--font-display);font-size:1.25rem;color:var(--c-primary);margin-bottom:16px}
+.section-title{font-size:0.78rem;font-weight:600;color:var(--c-muted);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:12px;margin-top:24px}
+
+/* ── PATIENT CODE BADGE ── */
+.code-badge{background:linear-gradient(135deg,var(--c-primary) 0%,#2471A3 100%);border-radius:var(--r-lg);padding:24px 28px;color:#fff;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:24px}
+.code-badge-label{font-size:0.78rem;opacity:0.75;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px}
+.code-badge-value{font-family:var(--font-display);font-size:2.2rem;letter-spacing:6px}
+.code-badge-hint{font-size:0.8rem;opacity:0.65;margin-top:4px}
+.code-copy-btn{background:rgba(255,255,255,0.18);border:1px solid rgba(255,255,255,0.3);color:#fff;border-radius:var(--r-sm);padding:8px 14px;font-size:0.82rem;cursor:pointer;font-family:var(--font-body);transition:background 0.2s}
+.code-copy-btn:hover{background:rgba(255,255,255,0.28)}
+
+/* ── STATS ── */
+.stats-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:24px}
+.stat-card{background:var(--c-card);border-radius:var(--r-md);border:1px solid var(--c-border);padding:16px;text-align:center}
+.stat-icon{font-size:22px;margin-bottom:4px}
+.stat-value{font-family:var(--font-display);font-size:1.6rem;color:var(--c-primary)}
+.stat-label{font-size:0.75rem;color:var(--c-muted);margin-top:2px}
+
+/* ── LOG LIST ── */
+.log-item{background:var(--c-card);border-radius:var(--r-lg);border:1px solid var(--c-border);padding:18px 20px;margin-bottom:12px;cursor:pointer;transition:all 0.18s}
+.log-item:hover{border-color:var(--c-primary);box-shadow:var(--shadow);transform:translateY(-1px)}
+.log-item-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.log-date{font-weight:600;font-size:0.95rem;color:var(--c-text)}
+.pain-badge{padding:3px 10px;border-radius:20px;font-size:0.78rem;font-weight:600}
+.pain-low{background:#D4EFDF;color:#1E8449}
+.pain-mid{background:#FCE6C5;color:#884E05}
+.pain-high{background:#FADBD8;color:#922B21}
+.log-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.chip{background:var(--c-bg);border:1px solid var(--c-border);border-radius:20px;padding:3px 10px;font-size:0.75rem;color:var(--c-muted);text-transform:capitalize}
+.chip-blue{background:#EBF3FA;border-color:#AED6F1;color:#1B4F72}
+.glucose-row{display:flex;gap:10px;margin-top:8px}
+.glucose-pill{padding:4px 10px;border-radius:20px;font-size:0.78rem;font-weight:500}
+.glucose-ok{background:#D4EFDF;color:#1E8449}
+.glucose-high{background:#FCE6C5;color:#884E05}
+
+/* ── MODAL ── */
+.modal-overlay{display:none;position:fixed;inset:0;background:var(--c-overlay);z-index:200;align-items:flex-start;justify-content:center;padding:24px 16px;overflow-y:auto}
+.modal-overlay.open{display:flex}
+.modal{background:var(--c-card);border-radius:var(--r-xl);width:100%;max-width:600px;box-shadow:var(--shadow-lg);animation:fadeUp 0.3s ease both;margin:auto}
+.modal-header{display:flex;align-items:center;justify-content:space-between;padding:20px 24px;border-bottom:1px solid var(--c-border)}
+.modal-title{font-family:var(--font-display);font-size:1.3rem;color:var(--c-primary)}
+.modal-close{width:32px;height:32px;border-radius:50%;border:1px solid var(--c-border);background:transparent;cursor:pointer;font-size:1.1rem;display:flex;align-items:center;justify-content:center;color:var(--c-muted);transition:all 0.15s}
+.modal-close:hover{background:var(--c-bg);color:var(--c-text)}
+.modal-body{padding:24px}
+.modal-section{margin-bottom:24px}
+.modal-section:last-child{margin-bottom:0}
+.modal-section-title{font-size:0.78rem;font-weight:600;text-transform:uppercase;letter-spacing:0.8px;color:var(--c-muted);margin-bottom:10px}
+
+/* ── PAIN ── */
+.pain-selector{display:flex;gap:6px;flex-wrap:wrap}
+.pain-btn{width:40px;height:40px;border-radius:8px;border:1.5px solid var(--c-border);background:var(--c-surface);font-weight:600;font-size:0.9rem;cursor:pointer;transition:all 0.15s;font-family:var(--font-body);color:var(--c-text)}
+.pain-btn:hover{border-color:var(--c-primary)}
+.pain-btn.active{background:var(--c-primary);color:#fff;border-color:var(--c-primary)}
+
+/* ── SYMPTOMS ── */
+.symptom-grid{display:flex;flex-wrap:wrap;gap:8px}
+.symptom-chip{padding:8px 14px;border:1.5px solid var(--c-border);border-radius:20px;font-size:0.85rem;font-weight:500;cursor:pointer;transition:all 0.15s;background:var(--c-surface);color:var(--c-muted);display:flex;align-items:center;gap:6px;user-select:none}
+.symptom-chip:hover{border-color:var(--c-primary);color:var(--c-text)}
+.symptom-chip.selected{background:#EBF3FA;border-color:var(--c-primary);color:var(--c-primary)}
+
+/* ── FOOT DIAGRAMS ── */
+.foot-diagrams-wrap{display:flex;gap:24px;justify-content:center;flex-wrap:wrap}
+.foot-panel{display:flex;flex-direction:column;align-items:center;gap:8px}
+.foot-panel-label{font-size:0.82rem;font-weight:600;color:var(--c-primary);text-transform:uppercase;letter-spacing:0.5px}
+.foot-diagram-container{position:relative;width:140px;height:260px;background:#EBF3FA;border-radius:var(--r-lg);border:1.5px solid #AED6F1;cursor:crosshair;overflow:hidden;transition:border-color 0.2s}
+.foot-diagram-container:hover{border-color:var(--c-primary)}
+.foot-diagram-container.readonly{cursor:default}
+.foot-diagram-container.active-foot{border-color:var(--c-primary);box-shadow:0 0 0 3px rgba(27,79,114,0.12)}
+.foot-svg{width:100%;height:100%}
+.foot-marker-dot{position:absolute;width:18px;height:18px;border-radius:50%;background:var(--c-danger);border:3px solid #fff;box-shadow:0 2px 8px rgba(166,50,40,0.5);transform:translate(-50%,-50%);pointer-events:none;animation:markerPop 0.3s cubic-bezier(0.34,1.56,0.64,1) both}
+.foot-marker-ring{position:absolute;width:32px;height:32px;border-radius:50%;border:2px solid rgba(166,50,40,0.3);transform:translate(-50%,-50%);pointer-events:none}
+@keyframes markerPop{from{transform:translate(-50%,-50%) scale(0)}to{transform:translate(-50%,-50%) scale(1)}}
+.foot-hint-text{font-size:0.75rem;color:var(--c-muted);text-align:center;line-height:1.4;max-width:320px;margin:8px auto 0}
+
+/* ── IMAGE UPLOAD ── */
+.image-grid{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:12px}
+.image-thumb-wrap{position:relative;width:90px;height:90px}
+.image-thumb-wrap img{width:100%;height:100%;border-radius:var(--r-md);object-fit:cover;border:1px solid var(--c-border)}
+.image-remove{position:absolute;top:-6px;right:-6px;width:22px;height:22px;border-radius:50%;background:var(--c-danger);color:#fff;border:2px solid #fff;font-size:0.7rem;cursor:pointer;display:flex;align-items:center;justify-content:center;font-weight:700}
+.upload-btn{display:flex;align-items:center;gap:10px;padding:14px 18px;border:2px dashed var(--c-border);border-radius:var(--r-lg);background:var(--c-surface);cursor:pointer;transition:all 0.18s;font-family:var(--font-body);font-size:0.9rem;color:var(--c-muted);width:100%}
+.upload-btn:hover{border-color:var(--c-primary);background:#EBF3FA;color:var(--c-primary)}
+.upload-btn-icon{font-size:24px;flex-shrink:0}
+
+/* ── DOCTOR SEARCH ── */
+.search-hero{text-align:center;padding:40px 20px 32px}
+.search-hero-icon{font-size:52px;margin-bottom:12px}
+.search-hero-title{font-family:var(--font-display);font-size:2rem;color:var(--c-primary);margin-bottom:8px}
+.search-hero-sub{color:var(--c-muted);font-size:0.95rem;max-width:360px;margin:0 auto 28px}
+.search-input-wrap{display:flex;gap:10px;max-width:420px;margin:0 auto}
+.code-input{flex:1;font-family:var(--font-display)!important;font-size:1.3rem!important;letter-spacing:4px;text-transform:uppercase;text-align:center}
+.patient-result{background:var(--c-card);border-radius:var(--r-lg);border:1px solid var(--c-border);padding:20px 24px;margin-top:20px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:14px;box-shadow:var(--shadow);animation:fadeUp 0.3s ease both}
+.patient-result-info{display:flex;align-items:center;gap:16px}
+.patient-result-avatar{width:52px;height:52px;border-radius:50%;background:var(--c-primary);color:#fff;font-size:1.1rem;font-weight:700;display:flex;align-items:center;justify-content:center}
+.patient-result-name{font-weight:700;font-size:1rem;margin-bottom:2px}
+.patient-result-code{font-size:0.82rem;color:var(--c-primary);font-weight:600}
+.patient-result-meta{font-size:0.8rem;color:var(--c-muted);margin-top:1px}
+
+/* ── MISC ── */
+.toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--c-text);color:#fff;padding:12px 22px;border-radius:30px;font-size:0.88rem;font-weight:500;box-shadow:var(--shadow-lg);z-index:999;opacity:0;transition:all 0.3s cubic-bezier(0.34,1.56,0.64,1);pointer-events:none;white-space:nowrap}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.toast.success{background:var(--c-success)}
+.toast.error{background:var(--c-danger)}
+.loader{display:inline-block;width:18px;height:18px;border:2.5px solid rgba(255,255,255,0.4);border-top-color:#fff;border-radius:50%;animation:spin 0.7s linear infinite}
+.loader-dark{border-color:rgba(27,79,114,0.2);border-top-color:var(--c-primary)}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading-state{display:flex;align-items:center;justify-content:center;padding:48px;gap:12px;color:var(--c-muted);font-size:0.9rem}
+.empty-state{text-align:center;padding:56px 20px}
+.empty-icon{font-size:48px;margin-bottom:14px}
+.empty-title{font-family:var(--font-display);font-size:1.3rem;color:var(--c-text);margin-bottom:8px}
+.empty-sub{color:var(--c-muted);font-size:0.9rem;max-width:300px;margin:0 auto 20px}
+.nav-tabs{display:flex;gap:4px;background:var(--c-bg);border-radius:var(--r-md);padding:4px}
+.nav-tab{padding:7px 16px;border:none;background:transparent;border-radius:8px;font-family:var(--font-body);font-size:0.85rem;font-weight:500;color:var(--c-muted);cursor:pointer;transition:all 0.18s;display:flex;align-items:center;gap:6px}
+.nav-tab.active{background:var(--c-card);color:var(--c-primary);box-shadow:var(--shadow)}
+.glucose-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+textarea{resize:vertical;min-height:90px}
+.divider{height:1px;background:var(--c-border);margin:20px 0}
+.upload-progress{height:4px;background:var(--c-border);border-radius:2px;margin-top:8px;overflow:hidden;display:none}
+.upload-progress-bar{height:100%;background:var(--c-primary);border-radius:2px;transition:width 0.3s;width:0%}
+
+/* ── RESPONSIVE ── */
+@media(max-width:480px){
+  .topbar{padding:0 12px;height:54px}
+  .topbar-brand{font-size:1.05rem}
+  .nav-tab{padding:6px 8px;font-size:0.78rem}
+  .app-content{padding:12px}
+  .card{padding:16px}
+  .card-title{font-size:1.05rem}
+  .code-badge{padding:16px;flex-direction:column;gap:10px}
+  .code-badge-value{font-size:1.8rem;letter-spacing:4px}
+  .stats-grid{gap:8px}
+  .stat-card{padding:12px 8px}
+  .stat-value{font-size:1.2rem}
+  .stat-label{font-size:0.68rem}
+  .glucose-grid{grid-template-columns:1fr}
+  .symptom-chip{padding:7px 10px;font-size:0.8rem}
+  .pain-btn{width:32px;height:32px;font-size:0.8rem}
+  .foot-diagram-container{width:120px;height:224px}
+  .btn{padding:12px 16px;font-size:0.9rem}
+  .auth-card{padding:24px 16px;margin:12px}
+  .auth-title{font-size:1.6rem}
+  .modal-overlay{align-items:flex-end;padding:0}
+  .modal{border-radius:var(--r-xl) var(--r-xl) 0 0}
+  .search-hero{padding:24px 12px 20px}
+  .search-hero-title{font-size:1.5rem}
+  .search-input-wrap{flex-direction:column}
+  .image-thumb-wrap{width:78px;height:78px}
+  .patient-result{flex-direction:column}
+  .log-item{padding:14px}
+  .foot-diagrams-wrap{gap:12px}
+}
+@media(max-width:360px){
+  .pain-btn{width:28px;height:28px;font-size:0.75rem}
+  .code-badge-value{font-size:1.5rem;letter-spacing:3px}
+  .foot-diagram-container{width:105px;height:196px}
+}
+</style>
+</head>
+<body>
+
+<!-- SPLASH -->
+<div id="view-splash" class="view active">
+  <div class="splash-logo">🦶</div>
+  <div class="splash-title">DFU Monitor</div>
+  <div class="splash-sub">Diabetic Foot Ulcer Care Platform</div>
+  <div class="splash-brand">by Mice Labs</div>
+</div>
+
+<!-- AUTH -->
+<div id="view-auth" class="view">
+  <div class="auth-card">
+    <div class="auth-logo">🦶</div>
+    <h1 class="auth-title">DFU Monitor</h1>
+    <p class="auth-sub">Secure foot ulcer monitoring for patients & doctors</p>
+    <div class="auth-tabs">
+      <button class="auth-tab active" onclick="switchAuthTab('login')">Sign In</button>
+      <button class="auth-tab" onclick="switchAuthTab('signup')">Create Account</button>
+    </div>
+    <div id="login-form">
+      <div class="form-group">
+        <label>Email address</label>
+        <input type="email" id="login-email" placeholder="you@example.com" autocomplete="email">
+        <div class="field-error" id="login-email-err"></div>
+      </div>
+      <div class="form-group">
+        <label>Password</label>
+        <input type="password" id="login-password" placeholder="Your password" autocomplete="current-password">
+        <div class="field-error" id="login-pass-err"></div>
+      </div>
+      <button class="btn btn-primary btn-full" onclick="handleLogin()" id="login-btn">Sign In</button>
+    </div>
+    <div id="signup-form" style="display:none">
+      <div class="form-group">
+        <label>I am a…</label>
+        <div class="role-grid">
+          <div class="role-card selected" id="role-patient" onclick="selectRole('patient')">
+            <div class="r-icon">🦶</div><div class="r-title">Patient</div><div class="r-desc">Track my foot ulcer</div>
+          </div>
+          <div class="role-card" id="role-doctor" onclick="selectRole('doctor')">
+            <div class="r-icon">🩺</div><div class="r-title">Doctor</div><div class="r-desc">Monitor patients</div>
+          </div>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Full name</label>
+        <input type="text" id="signup-name" placeholder="Your full name" autocomplete="name">
+        <div class="field-error" id="signup-name-err"></div>
+      </div>
+      <div class="form-group">
+        <label>Email address</label>
+        <input type="email" id="signup-email" placeholder="you@example.com" autocomplete="email">
+        <div class="field-error" id="signup-email-err"></div>
+      </div>
+      <div class="form-group">
+        <label>Password</label>
+        <input type="password" id="signup-password" placeholder="Min 8 chars, uppercase, number" autocomplete="new-password">
+        <div class="field-error" id="signup-pass-err"></div>
+        <div class="hint">At least 8 characters · one uppercase · one number</div>
+      </div>
+      <button class="btn btn-primary btn-full" onclick="handleSignup()" id="signup-btn">Create Account</button>
+    </div>
+  </div>
+</div>
+
+<!-- MAIN APP -->
+<div id="view-app" class="view">
+  <div class="topbar">
+    <div class="topbar-brand"><span>🦶</span><span>DFU Monitor</span></div>
+    <div class="topbar-right">
+      <div class="nav-tabs" id="main-nav"></div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <span id="topbar-name" style="font-size:0.82rem;color:var(--c-muted)"></span>
+        <div class="avatar" id="topbar-avatar"></div>
+        <button class="btn btn-ghost btn-sm" onclick="handleLogout()">Out</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="app-content">
+
+    <!-- PATIENT DASHBOARD -->
+    <div id="page-dashboard" class="page">
+      <div id="code-badge-wrap"></div>
+      <div class="stats-grid" id="stats-grid"></div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+        <h2 style="font-family:var(--font-display);font-size:1.3rem;color:var(--c-primary)">Health Logs</h2>
+        <button class="btn btn-accent btn-sm" onclick="showPage('new-log')">+ New Log</button>
+      </div>
+      <div id="logs-list"></div>
+    </div>
+
+    <!-- NEW LOG -->
+    <div id="page-new-log" class="page">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:24px">
+        <button class="btn btn-ghost btn-sm" onclick="showPage('dashboard')">← Back</button>
+        <h2 style="font-family:var(--font-display);font-size:1.4rem;color:var(--c-primary)">New Health Log</h2>
+      </div>
+
+      <!-- PHOTOS -->
+      <div class="card" style="margin-bottom:16px">
+        <div class="card-title">📷 Wound Photos</div>
+        <div class="image-grid" id="image-grid"></div>
+        <div id="upload-btn-wrap">
+          <label class="upload-btn" for="gallery-input">
+            <span class="upload-btn-icon">🖼️</span>
+            <div>
+              <div style="font-weight:600;color:var(--c-text)">Upload Photo</div>
+              <div style="font-size:0.78rem;color:var(--c-muted)">Choose from your device · up to 3 photos</div>
+            </div>
+          </label>
+        </div>
+        <div class="upload-progress" id="upload-progress">
+          <div class="upload-progress-bar" id="upload-bar"></div>
+        </div>
+        <input type="file" id="gallery-input" accept="image/*" multiple style="display:none" onchange="handleFileSelect(event)">
+      </div>
+
+      <!-- BLOOD SUGAR -->
+      <div class="card" style="margin-bottom:16px">
+        <div class="card-title">🩸 Blood Sugar Levels <span style="font-size:0.8rem;font-weight:400;color:var(--c-muted)">(mg/dL)</span></div>
+        <div class="glucose-grid">
+          <div class="form-group" style="margin-bottom:0">
+            <label>Pre-meal glucose</label>
+            <input type="number" id="pre-glucose" placeholder="e.g. 95" min="20" max="600">
+            <div class="hint">Normal: 70–130 mg/dL</div>
+          </div>
+          <div class="form-group" style="margin-bottom:0">
+            <label>Post-meal glucose</label>
+            <input type="number" id="post-glucose" placeholder="e.g. 140" min="20" max="600">
+            <div class="hint">Normal: 70–180 mg/dL</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SYMPTOMS -->
+      <div class="card" style="margin-bottom:16px">
+        <div class="card-title">🔍 Symptoms <span style="font-size:0.8rem;font-weight:400;color:var(--c-muted)">— select all that apply</span></div>
+        <div class="symptom-grid" id="symptom-grid"></div>
+      </div>
+
+      <!-- PAIN -->
+      <div class="card" style="margin-bottom:16px">
+        <div class="card-title">😣 Pain Level</div>
+        <div style="margin-bottom:14px">
+          <span id="pain-label-big" style="font-family:var(--font-display);font-size:2rem;color:var(--c-primary)">0</span>
+          <span id="pain-label-text" style="font-size:0.95rem;color:var(--c-muted);margin-left:8px">No pain</span>
+        </div>
+        <div class="pain-selector" id="pain-selector"></div>
+        <div style="display:flex;justify-content:space-between;margin-top:6px">
+          <span style="font-size:0.75rem;color:var(--c-muted)">0 — No pain</span>
+          <span style="font-size:0.75rem;color:var(--c-muted)">10 — Worst</span>
+        </div>
+      </div>
+
+      <!-- FOOT LOCATION — separate left and right -->
+      <div class="card" style="margin-bottom:16px">
+        <div class="card-title">📍 Ulcer Location</div>
+        <p style="font-size:0.85rem;color:var(--c-muted);margin-bottom:16px">Tap on the left foot, right foot, or both to mark the ulcer position.</p>
+        <div class="foot-diagrams-wrap">
+
+          <!-- LEFT FOOT -->
+          <div class="foot-panel">
+            <div class="foot-panel-label">Left Foot</div>
+            <div class="foot-diagram-container" id="foot-left" onclick="handleFootTap(event,'left')">
+              <svg class="foot-svg" viewBox="0 0 120 220" xmlns="http://www.w3.org/2000/svg">
+                <!-- Big toe -->
+                <ellipse cx="78" cy="22" rx="13" ry="16" fill="#1B4F72" opacity="0.13"/>
+                <!-- 2nd toe -->
+                <ellipse cx="60" cy="18" rx="11" ry="14" fill="#1B4F72" opacity="0.11"/>
+                <!-- 3rd toe -->
+                <ellipse cx="44" cy="20" rx="10" ry="13" fill="#1B4F72" opacity="0.11"/>
+                <!-- 4th toe -->
+                <ellipse cx="30" cy="26" rx="9" ry="12" fill="#1B4F72" opacity="0.10"/>
+                <!-- Pinky toe -->
+                <ellipse cx="19" cy="34" rx="8" ry="10" fill="#1B4F72" opacity="0.09"/>
+                <!-- Ball of foot -->
+                <ellipse cx="60" cy="72" rx="40" ry="30" fill="#1B4F72" opacity="0.10"/>
+                <!-- Arch (narrower) -->
+                <ellipse cx="38" cy="130" rx="22" ry="38" fill="#1B4F72" opacity="0.07"/>
+                <!-- Heel -->
+                <ellipse cx="54" cy="192" rx="36" ry="26" fill="#1B4F72" opacity="0.12"/>
+                <!-- Outer edge connection -->
+                <ellipse cx="78" cy="145" rx="18" ry="50" fill="#1B4F72" opacity="0.07"/>
+                <!-- Labels -->
+                <text x="60" y="75" text-anchor="middle" font-size="8" fill="#1B4F72" opacity="0.45" font-family="DM Sans,sans-serif">Ball</text>
+                <text x="54" y="195" text-anchor="middle" font-size="8" fill="#1B4F72" opacity="0.45" font-family="DM Sans,sans-serif">Heel</text>
+              </svg>
+              <div id="marker-left" style="display:none" class="foot-marker-dot"></div>
+              <div id="ring-left"   style="display:none" class="foot-marker-ring"></div>
+            </div>
+          </div>
+
+          <!-- RIGHT FOOT -->
+          <div class="foot-panel">
+            <div class="foot-panel-label">Right Foot</div>
+            <div class="foot-diagram-container" id="foot-right" onclick="handleFootTap(event,'right')">
+              <svg class="foot-svg" viewBox="0 0 120 220" xmlns="http://www.w3.org/2000/svg">
+                <!-- Big toe (mirrored) -->
+                <ellipse cx="42" cy="22" rx="13" ry="16" fill="#1B4F72" opacity="0.13"/>
+                <!-- 2nd toe -->
+                <ellipse cx="60" cy="18" rx="11" ry="14" fill="#1B4F72" opacity="0.11"/>
+                <!-- 3rd toe -->
+                <ellipse cx="76" cy="20" rx="10" ry="13" fill="#1B4F72" opacity="0.11"/>
+                <!-- 4th toe -->
+                <ellipse cx="90" cy="26" rx="9" ry="12" fill="#1B4F72" opacity="0.10"/>
+                <!-- Pinky toe -->
+                <ellipse cx="101" cy="34" rx="8" ry="10" fill="#1B4F72" opacity="0.09"/>
+                <!-- Ball of foot -->
+                <ellipse cx="60" cy="72" rx="40" ry="30" fill="#1B4F72" opacity="0.10"/>
+                <!-- Arch -->
+                <ellipse cx="82" cy="130" rx="22" ry="38" fill="#1B4F72" opacity="0.07"/>
+                <!-- Heel -->
+                <ellipse cx="66" cy="192" rx="36" ry="26" fill="#1B4F72" opacity="0.12"/>
+                <!-- Outer edge -->
+                <ellipse cx="42" cy="145" rx="18" ry="50" fill="#1B4F72" opacity="0.07"/>
+                <!-- Labels -->
+                <text x="60" y="75" text-anchor="middle" font-size="8" fill="#1B4F72" opacity="0.45" font-family="DM Sans,sans-serif">Ball</text>
+                <text x="66" y="195" text-anchor="middle" font-size="8" fill="#1B4F72" opacity="0.45" font-family="DM Sans,sans-serif">Heel</text>
+              </svg>
+              <div id="marker-right" style="display:none" class="foot-marker-dot"></div>
+              <div id="ring-right"   style="display:none" class="foot-marker-ring"></div>
+            </div>
+          </div>
+
+        </div>
+        <p class="foot-hint-text">Tap directly on the diagram to pin the ulcer location. You can mark both feet if needed.</p>
+        <div id="foot-marked-info" style="display:none;margin-top:10px">
+          <div style="background:#EBF3FA;border-radius:var(--r-sm);padding:10px 14px;font-size:0.82rem;color:var(--c-primary);font-weight:500">
+            📍 <span id="foot-marked-text">Location marked</span> — tap to adjust
+          </div>
+        </div>
+      </div>
+
+      <!-- REMARKS -->
+      <div class="card" style="margin-bottom:24px">
+        <div class="card-title">📝 Remarks</div>
+        <textarea id="remarks" placeholder="Any observations, changes, or notes about your condition today…"></textarea>
+      </div>
+
+      <button class="btn btn-primary btn-full" id="save-log-btn" onclick="handleSaveLog()" style="margin-bottom:40px">
+        Save Health Log
+      </button>
+    </div>
+
+    <!-- DOCTOR SEARCH -->
+    <div id="page-search" class="page">
+      <div class="search-hero">
+        <div class="search-hero-icon">🔍</div>
+        <h2 class="search-hero-title">Find Patient</h2>
+        <p class="search-hero-sub">Enter the patient's 4-character code to access their records</p>
+        <div class="search-input-wrap">
+          <input type="text" id="search-code" class="code-input"
+            placeholder="A8F9" maxlength="4"
+            oninput="this.value=this.value.toUpperCase().replace(/[^A-Z0-9]/g,'')"
+            onkeydown="if(event.key==='Enter')handleSearch()">
+          <button class="btn btn-primary" onclick="handleSearch()" id="search-btn">Search</button>
+        </div>
+        <div id="search-error" style="color:var(--c-danger);font-size:0.85rem;margin-top:10px;display:none"></div>
+      </div>
+      <div id="patient-result" style="display:none"></div>
+      <div id="doctor-logs-section" style="display:none">
+        <h3 style="font-family:var(--font-display);font-size:1.2rem;color:var(--c-primary);margin-bottom:14px">Health Logs</h3>
+        <div id="doctor-logs-list"></div>
+      </div>
+    </div>
+
+    <!-- PROFILE -->
+    <div id="page-profile" class="page">
+      <div class="card">
+        <div class="card-title">👤 My Profile</div>
+        <div id="profile-content"></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- LOG DETAIL MODAL -->
+<div class="modal-overlay" id="log-modal" onclick="closeModal(event)">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title" id="modal-title">Log Details</span>
+      <button class="modal-close" onclick="closeLogModal()">✕</button>
+    </div>
+    <div class="modal-body" id="modal-body"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const isConfigured = SUPABASE_URL !== 'YOUR_SUPABASE_URL' && SUPABASE_ANON_KEY !== 'YOUR_SUPABASE_ANON_KEY';
+let db, currentUser, currentProfile, selectedRole = 'patient';
+let newLogImages = [], selectedSymptoms = [], selectedPain = 0;
+let footMarkers = { left: null, right: null }; // stores {x_percent, y_percent} per foot
+
+if (isConfigured) {
+  db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+}
+
+const SYMPTOMS = [
+  {key:'redness',label:'Redness',icon:'🔴'},
+  {key:'swelling',label:'Swelling',icon:'💧'},
+  {key:'discharge',label:'Discharge',icon:'💦'},
+  {key:'odor',label:'Odor',icon:'👃'},
+  {key:'numbness',label:'Numbness',icon:'🦶'},
+  {key:'burning_sensation',label:'Burning sensation',icon:'🔥'},
+  {key:'itching',label:'Itching',icon:'⚡'},
+  {key:'warmth',label:'Warmth',icon:'🌡️'},
+  {key:'skin_discoloration',label:'Skin discoloration',icon:'🎨'},
+  {key:'open_wound',label:'Open wound',icon:'🩹'},
+];
+const PAIN_LABELS = ['No pain','Minimal','Mild','Uncomfortable','Moderate','Noticeable','Moderate severe','Severe','Very severe','Intense','Worst possible'];
+
+/* ── ROUTING ── */
+function showView(id) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.getElementById('view-'+id).classList.add('active');
+}
+function showPage(id) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('page-'+id).classList.add('active');
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.toggle('active', t.dataset.page === id));
+}
+
+/* ── TOAST ── */
+let toastTimer;
+function showToast(msg, type='') {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.className = 'toast show '+type;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 3200);
+}
+
+/* ── AUTH ── */
+function switchAuthTab(tab) {
+  document.querySelectorAll('.auth-tab').forEach((el,i) => el.classList.toggle('active',(i===0)===(tab==='login')));
+  document.getElementById('login-form').style.display  = tab==='login'  ? '' : 'none';
+  document.getElementById('signup-form').style.display = tab==='signup' ? '' : 'none';
+}
+function selectRole(role) {
+  selectedRole = role;
+  document.getElementById('role-patient').classList.toggle('selected', role==='patient');
+  document.getElementById('role-doctor').classList.toggle('selected', role==='doctor');
+}
+function validateEmail(e) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e); }
+function validatePassword(p) {
+  const errs = [];
+  if (p.length < 8) errs.push('min 8 chars');
+  if (!/[A-Z]/.test(p)) errs.push('one uppercase');
+  if (!/[0-9]/.test(p)) errs.push('one number');
+  return errs;
+}
+function setErr(id, msg) { const el = document.getElementById(id); if(el) el.textContent = msg; }
+function clearErrs(...ids) { ids.forEach(id => setErr(id,'')); }
+
+async function handleLogin() {
+  if (!isConfigured) { showToast('Configure Supabase first','error'); return; }
+  const email = document.getElementById('login-email').value.trim();
+  const pass  = document.getElementById('login-password').value;
+  clearErrs('login-email-err','login-pass-err');
+  let ok = true;
+  if (!validateEmail(email)) { setErr('login-email-err','Enter a valid email'); ok=false; }
+  if (!pass) { setErr('login-pass-err','Password is required'); ok=false; }
+  if (!ok) return;
+  const btn = document.getElementById('login-btn');
+  btn.innerHTML = '<span class="loader"></span>'; btn.disabled = true;
+  try {
+    const {data,error} = await db.auth.signInWithPassword({email, password:pass});
+    if (error) throw error;
+    await loadUserAndEnter(data.user.id);
+  } catch(e) {
+    showToast(e.message.includes('Invalid') ? 'Incorrect email or password' : e.message, 'error');
+    btn.textContent = 'Sign In'; btn.disabled = false;
+  }
+}
+
+async function handleSignup() {
+  if (!isConfigured) { showToast('Configure Supabase first','error'); return; }
+  const name  = document.getElementById('signup-name').value.trim();
+  const email = document.getElementById('signup-email').value.trim();
+  const pass  = document.getElementById('signup-password').value;
+  clearErrs('signup-name-err','signup-email-err','signup-pass-err');
+  let ok = true;
+  if (name.length < 2) { setErr('signup-name-err','Enter your full name'); ok=false; }
+  if (!validateEmail(email)) { setErr('signup-email-err','Enter a valid email'); ok=false; }
+  const pwErrs = validatePassword(pass);
+  if (pwErrs.length) { setErr('signup-pass-err','Password needs: '+pwErrs.join(', ')); ok=false; }
+  if (!ok) return;
+  const btn = document.getElementById('signup-btn');
+  btn.innerHTML = '<span class="loader"></span>'; btn.disabled = true;
+  try {
+    const {data,error} = await db.auth.signUp({
+      email, password:pass,
+      options:{data:{full_name:name, role:selectedRole}}
+    });
+    if (error) throw error;
+    let user = null;
+    for (let i=0; i<10; i++) {
+      const {data:u} = await db.from('users').select('*').eq('id',data.user.id).single();
+      if (u) { user=u; break; }
+      await new Promise(r=>setTimeout(r,700));
+    }
+    if (!user) throw new Error('Account created — please sign in.');
+    await loadUserAndEnter(data.user.id);
+  } catch(e) {
+    showToast(e.message,'error');
+    btn.textContent='Create Account'; btn.disabled=false;
+  }
+}
+
+async function loadUserAndEnter(userId) {
+  let user = null;
+  for (let i=0; i<10; i++) {
+    const {data} = await db.from('users').select('*').eq('id',userId).single();
+    if (data) { user=data; break; }
+    await new Promise(r=>setTimeout(r,700));
+  }
+  if (!user) {
+    const {data:{user:authUser}} = await db.auth.getUser();
+    if (!authUser) throw new Error('Session expired. Please sign in again.');
+    const meta = authUser.user_metadata||{};
+    const vRole = meta.role||'patient';
+    const vName = meta.full_name||authUser.email.split('@')[0];
+    await db.from('users').upsert({id:authUser.id,email:authUser.email,full_name:vName,role:vRole,created_at:new Date().toISOString(),updated_at:new Date().toISOString()},{onConflict:'id'});
+    if (vRole==='doctor') {
+      await db.from('doctor_profiles').upsert({user_id:authUser.id},{onConflict:'user_id'});
+    } else {
+      await db.from('patient_profiles').upsert({user_id:authUser.id},{onConflict:'user_id'});
+    }
+    const {data:retried} = await db.from('users').select('*').eq('id',userId).single();
+    user = retried;
+  }
+  if (!user) throw new Error('Could not load profile. Please try again.');
+  currentUser = user;
+  await enterApp();
+}
+
+async function handleLogout() {
+  await db.auth.signOut();
+  currentUser=null; currentProfile=null;
+  showView('auth');
+}
+
+/* ── APP ENTRY ── */
+async function enterApp() {
+  const initials = currentUser.full_name.split(' ').map(n=>n[0]).join('').toUpperCase().slice(0,2);
+  document.getElementById('topbar-name').textContent = currentUser.full_name.split(' ')[0];
+  document.getElementById('topbar-avatar').textContent = initials;
+  const nav = document.getElementById('main-nav');
+  if (currentUser.role==='patient') {
+    nav.innerHTML = `
+      <button class="nav-tab active" data-page="dashboard" onclick="showPage('dashboard')">🏠 <span>Home</span></button>
+      <button class="nav-tab" data-page="new-log" onclick="showPage('new-log')">➕ <span>New Log</span></button>
+      <button class="nav-tab" data-page="profile" onclick="showPage('profile');loadProfile()">👤 <span>Profile</span></button>`;
+    await loadPatientProfile();
+    await loadDashboard();
+    buildNewLogForm();
+  } else {
+    nav.innerHTML = `
+      <button class="nav-tab active" data-page="search" onclick="showPage('search')">🔍 <span>Search</span></button>
+      <button class="nav-tab" data-page="profile" onclick="showPage('profile');loadProfile()">👤 <span>Profile</span></button>`;
+    showPage('search');
+  }
+  showView('app');
+}
+
+/* ── PATIENT DASHBOARD ── */
+async function loadPatientProfile() {
+  const {data} = await db.from('patient_profiles').select('*').eq('user_id',currentUser.id).single();
+  currentProfile = data;
+}
+
+async function loadDashboard() {
+  showPage('dashboard');
+  if (!currentProfile) return;
+  document.getElementById('code-badge-wrap').innerHTML = `
+    <div class="code-badge">
+      <div>
+        <div class="code-badge-label">Your Patient Code</div>
+        <div class="code-badge-value">${currentProfile.patient_code}</div>
+        <div class="code-badge-hint">Share with your doctor</div>
+      </div>
+      <button class="code-copy-btn" onclick="copyCode('${currentProfile.patient_code}')">📋 Copy</button>
+    </div>`;
+  document.getElementById('logs-list').innerHTML = `<div class="loading-state"><span class="loader loader-dark"></span> Loading…</div>`;
+  const {data:logs} = await db.from('patient_logs')
+    .select('*,images:log_images(*)')
+    .eq('patient_id',currentProfile.id)
+    .order('log_date',{ascending:false})
+    .limit(20);
+  const logList = logs||[];
+  document.getElementById('stats-grid').innerHTML = `
+    <div class="stat-card"><div class="stat-icon">📋</div><div class="stat-value">${logList.length}</div><div class="stat-label">Total Logs</div></div>
+    <div class="stat-card"><div class="stat-icon">📅</div><div class="stat-value">${logList[0]?new Date(logList[0].log_date).toLocaleDateString('en-US',{month:'short',day:'numeric'}):'—'}</div><div class="stat-label">Last Entry</div></div>
+    <div class="stat-card"><div class="stat-icon">📸</div><div class="stat-value">${logList.reduce((s,l)=>s+(l.images?.length||0),0)}</div><div class="stat-label">Photos</div></div>`;
+  if (!logList.length) {
+    document.getElementById('logs-list').innerHTML = `<div class="empty-state"><div class="empty-icon">📝</div><div class="empty-title">No logs yet</div><div class="empty-sub">Tap "New Log" to record your first health entry</div><button class="btn btn-accent" onclick="showPage('new-log')">+ Add First Log</button></div>`;
+    return;
+  }
+  document.getElementById('logs-list').innerHTML = logList.map(log=>buildLogCard(log)).join('');
+}
+
+function buildLogCard(log) {
+  const pain = log.pain_scale;
+  const pClass = pain<=3?'pain-low':pain<=6?'pain-mid':'pain-high';
+  const syms = (log.symptoms||[]).slice(0,3).map(s=>`<span class="chip">${s.replace(/_/g,' ')}</span>`).join('');
+  const moreSyms = log.symptoms?.length>3?`<span class="chip">+${log.symptoms.length-3}</span>`:'';
+  const glucose = [
+    log.pre_meal_glucose ?`<span class="glucose-pill ${log.pre_meal_glucose>130?'glucose-high':'glucose-ok'}">Pre: ${log.pre_meal_glucose}</span>`:'',
+    log.post_meal_glucose?`<span class="glucose-pill ${log.post_meal_glucose>180?'glucose-high':'glucose-ok'}">Post: ${log.post_meal_glucose}</span>`:'',
+  ].join('');
+  const imgs = log.images?.length?`<span class="chip chip-blue">📷 ${log.images.length} photo${log.images.length>1?'s':''}</span>`:'';
+  return `<div class="log-item" onclick="openLogModal('${log.id}')">
+    <div class="log-item-header">
+      <span class="log-date">${new Date(log.log_date).toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric',year:'numeric'})}</span>
+      <span class="pain-badge ${pClass}">Pain ${pain}/10</span>
+    </div>
+    ${glucose?`<div class="glucose-row">${glucose}</div>`:''}
+    <div class="log-chips">${syms}${moreSyms}${imgs}</div>
+    ${log.remarks?`<p style="font-size:0.82rem;color:var(--c-muted);margin-top:8px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">"${log.remarks}"</p>`:''}
+  </div>`;
+}
+
+function copyCode(code) {
+  navigator.clipboard?.writeText(code).then(()=>showToast('Patient code copied!','success'));
+}
+
+/* ── NEW LOG FORM ── */
+function buildNewLogForm() {
+  document.getElementById('symptom-grid').innerHTML = SYMPTOMS.map(s=>`
+    <div class="symptom-chip" id="sc-${s.key}" onclick="toggleSymptom('${s.key}')">${s.icon} ${s.label}</div>`).join('');
+  document.getElementById('pain-selector').innerHTML = Array.from({length:11},(_,i)=>`
+    <button class="pain-btn${i===0?' active':''}" onclick="setPain(${i})">${i}</button>`).join('');
+  renderImageGrid();
+}
+
+function resetNewLogForm() {
+  newLogImages=[]; selectedSymptoms=[]; selectedPain=0;
+  footMarkers={left:null,right:null};
+  document.getElementById('pre-glucose').value='';
+  document.getElementById('post-glucose').value='';
+  document.getElementById('remarks').value='';
+  document.querySelectorAll('.symptom-chip').forEach(c=>c.classList.remove('selected'));
+  document.querySelectorAll('.pain-btn').forEach((b,i)=>b.classList.toggle('active',i===0));
+  document.getElementById('pain-label-big').textContent='0';
+  document.getElementById('pain-label-text').textContent='No pain';
+  ['left','right'].forEach(side=>{
+    document.getElementById('marker-'+side).style.display='none';
+    document.getElementById('ring-'+side).style.display='none';
+    document.getElementById('foot-'+side).classList.remove('active-foot');
+  });
+  document.getElementById('foot-marked-info').style.display='none';
+  renderImageGrid();
+}
+
+function toggleSymptom(key) {
+  const i = selectedSymptoms.indexOf(key);
+  if (i>=0) selectedSymptoms.splice(i,1); else selectedSymptoms.push(key);
+  document.getElementById('sc-'+key).classList.toggle('selected',selectedSymptoms.includes(key));
+}
+
+function setPain(v) {
+  selectedPain=v;
+  document.querySelectorAll('.pain-btn').forEach((b,i)=>b.classList.toggle('active',i===v));
+  document.getElementById('pain-label-big').textContent=v;
+  document.getElementById('pain-label-text').textContent=PAIN_LABELS[v];
+}
+
+function handleFootTap(e, side) {
+  const container = e.currentTarget;
+  const rect = container.getBoundingClientRect();
+  const xPct = ((e.clientX-rect.left)/rect.width)*100;
+  const yPct = ((e.clientY-rect.top)/rect.height)*100;
+  footMarkers[side] = {x_percent: Math.max(0,Math.min(100,xPct)), y_percent: Math.max(0,Math.min(100,yPct))};
+
+  const marker = document.getElementById('marker-'+side);
+  const ring   = document.getElementById('ring-'+side);
+  marker.style.display = ring.style.display = '';
+  marker.style.left = ring.style.left = xPct+'%';
+  marker.style.top  = ring.style.top  = yPct+'%';
+  marker.style.animation='none'; marker.offsetHeight; marker.style.animation='';
+
+  container.classList.add('active-foot');
+
+  const marked = Object.entries(footMarkers).filter(([,v])=>v).map(([k])=>k+' foot').join(' & ');
+  document.getElementById('foot-marked-info').style.display='';
+  document.getElementById('foot-marked-text').textContent = marked.charAt(0).toUpperCase()+marked.slice(1)+' marked';
+}
+
+/* ── IMAGE HANDLING ── */
+function renderImageGrid() {
+  const grid = document.getElementById('image-grid');
+  const btnWrap = document.getElementById('upload-btn-wrap');
+  grid.innerHTML = newLogImages.map((img,i)=>`
+    <div class="image-thumb-wrap">
+      <img src="${img.dataUrl}" alt="Wound photo ${i+1}">
+      <button class="image-remove" onclick="removeImage(${i})">✕</button>
+    </div>`).join('');
+  if (btnWrap) btnWrap.style.display = newLogImages.length>=3?'none':'';
+}
+
+function removeImage(index) {
+  newLogImages.splice(index,1);
+  renderImageGrid();
+}
+
+function handleFileSelect(event) {
+  const files = Array.from(event.target.files);
+  const remaining = 3-newLogImages.length;
+  files.slice(0,remaining).forEach(file=>{
+    const reader = new FileReader();
+    reader.onload = async(e)=>{
+      const compressed = await compressImage(e.target.result);
+      newLogImages.push({dataUrl:compressed,file});
+      renderImageGrid();
+    };
+    reader.readAsDataURL(file);
+  });
+  event.target.value='';
+}
+
+async function compressImage(dataUrl) {
+  return new Promise(resolve=>{
+    const img = new Image();
+    img.onload = ()=>{
+      const canvas = document.createElement('canvas');
+      const maxDim = 1200;
+      let {width,height} = img;
+      if (width>maxDim||height>maxDim) {
+        if (width>height){height=(height/width)*maxDim;width=maxDim;}
+        else{width=(width/height)*maxDim;height=maxDim;}
+      }
+      canvas.width=width; canvas.height=height;
+      canvas.getContext('2d').drawImage(img,0,0,width,height);
+      resolve(canvas.toDataURL('image/jpeg',0.72));
+    };
+    img.src=dataUrl;
+  });
+}
+
+async function uploadImageToSupabase(dataUrl, logId, order) {
+  const base64 = dataUrl.split(',')[1];
+  const bytes = Uint8Array.from(atob(base64),c=>c.charCodeAt(0));
+  const path = `${currentUser.id}/${logId}/${order}.jpg`;
+  const {error} = await db.storage.from('wound-images').upload(path,bytes.buffer,{contentType:'image/jpeg',upsert:false});
+  if (error) throw error;
+  return path;
+}
+
+/* ── SAVE LOG ── */
+async function handleSaveLog() {
+  if (!currentProfile) { showToast('Profile not loaded','error'); return; }
+  const preMeal  = parseInt(document.getElementById('pre-glucose').value)||null;
+  const postMeal = parseInt(document.getElementById('post-glucose').value)||null;
+  const remarks  = document.getElementById('remarks').value.trim();
+  const btn = document.getElementById('save-log-btn');
+  btn.innerHTML='<span class="loader"></span> Saving…'; btn.disabled=true;
+  try {
+    const {data:log,error:logErr} = await db.from('patient_logs').insert({
+      patient_id:currentProfile.id,
+      pre_meal_glucose:preMeal,
+      post_meal_glucose:postMeal,
+      pain_scale:selectedPain,
+      symptoms:selectedSymptoms,
+      remarks:remarks||null,
+      log_date:new Date().toISOString().split('T')[0],
+    }).select().single();
+    if (logErr) throw logErr;
+
+    if (newLogImages.length) {
+      const progress=document.getElementById('upload-progress');
+      const bar=document.getElementById('upload-bar');
+      progress.style.display='';
+      for (let i=0;i<newLogImages.length;i++) {
+        bar.style.width=((i/newLogImages.length)*80)+'%';
+        const path = await uploadImageToSupabase(newLogImages[i].dataUrl,log.id,i+1);
+        await db.from('log_images').insert({log_id:log.id,patient_id:currentProfile.id,storage_path:path,mime_type:'image/jpeg',sort_order:i+1});
+      }
+      bar.style.width='100%';
+      setTimeout(()=>{progress.style.display='none';bar.style.width='0%';},600);
+    }
+
+    // Save foot markers for each foot that was marked
+    for (const [side, pos] of Object.entries(footMarkers)) {
+      if (!pos) continue;
+      await db.from('foot_markers').insert({
+        log_id:log.id, patient_id:currentProfile.id,
+        x_percent:pos.x_percent, y_percent:pos.y_percent, foot_side:side,
+      });
+    }
+
+    showToast('Log saved successfully! ✓','success');
+    resetNewLogForm();
+    await loadDashboard();
+  } catch(e) {
+    showToast('Save failed: '+e.message,'error');
+    btn.textContent='Save Health Log'; btn.disabled=false;
+  }
+}
+
+/* ── LOG DETAIL MODAL ── */
+async function openLogModal(logId) {
+  const modal=document.getElementById('log-modal');
+  const body=document.getElementById('modal-body');
+  modal.classList.add('open');
+  body.innerHTML=`<div class="loading-state"><span class="loader loader-dark"></span> Loading…</div>`;
+  const {data:log} = await db.from('patient_logs')
+    .select('*,images:log_images(*),foot_markers:foot_markers(*)')
+    .eq('id',logId).single();
+  document.getElementById('modal-title').textContent =
+    new Date(log.log_date).toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'});
+  const pain=log.pain_scale;
+  const pColor=pain<=3?'#2E7D5E':pain<=6?'#B5631A':'#A63228';
+
+  let imagesHtml='';
+  if (log.images?.length) {
+    const urls = await Promise.all(log.images.map(async img=>{
+      const {data} = await db.storage.from('wound-images').createSignedUrl(img.storage_path,3600);
+      return data?.signedUrl||'';
+    }));
+    imagesHtml=`<div class="modal-section"><div class="modal-section-title">📷 Wound Photos</div><div style="display:flex;gap:10px;flex-wrap:wrap">${urls.filter(Boolean).map(url=>`<img src="${url}" style="width:110px;height:110px;object-fit:cover;border-radius:var(--r-md);border:1px solid var(--c-border)">`).join('')}</div></div>`;
+  }
+
+  // Render foot markers (one per foot side)
+  let markersHtml='';
+  const markers = Array.isArray(log.foot_markers)?log.foot_markers:log.foot_markers?[log.foot_markers]:[];
+  if (markers.length) {
+    markersHtml=`<div class="modal-section"><div class="modal-section-title">📍 Ulcer Location</div><div style="display:flex;gap:16px;flex-wrap:wrap">`;
+    for (const m of markers) {
+      const isLeft = m.foot_side==='left';
+      markersHtml+=`<div style="text-align:center">
+        <div style="font-size:0.75rem;font-weight:600;color:var(--c-primary);margin-bottom:4px;text-transform:uppercase">${m.foot_side} foot</div>
+        <div style="position:relative;width:100px;height:186px;background:#EBF3FA;border-radius:var(--r-md);border:1.5px solid #AED6F1;overflow:hidden">
+          <svg width="100%" height="100%" viewBox="0 0 120 220">
+            ${isLeft?`
+            <ellipse cx="78" cy="22" rx="13" ry="16" fill="#1B4F72" opacity="0.13"/>
+            <ellipse cx="60" cy="18" rx="11" ry="14" fill="#1B4F72" opacity="0.11"/>
+            <ellipse cx="44" cy="20" rx="10" ry="13" fill="#1B4F72" opacity="0.11"/>
+            <ellipse cx="30" cy="26" rx="9" ry="12" fill="#1B4F72" opacity="0.10"/>
+            <ellipse cx="19" cy="34" rx="8" ry="10" fill="#1B4F72" opacity="0.09"/>
+            <ellipse cx="60" cy="72" rx="40" ry="30" fill="#1B4F72" opacity="0.10"/>
+            <ellipse cx="38" cy="130" rx="22" ry="38" fill="#1B4F72" opacity="0.07"/>
+            <ellipse cx="54" cy="192" rx="36" ry="26" fill="#1B4F72" opacity="0.12"/>
+            <ellipse cx="78" cy="145" rx="18" ry="50" fill="#1B4F72" opacity="0.07"/>
+            `:`
+            <ellipse cx="42" cy="22" rx="13" ry="16" fill="#1B4F72" opacity="0.13"/>
+            <ellipse cx="60" cy="18" rx="11" ry="14" fill="#1B4F72" opacity="0.11"/>
+            <ellipse cx="76" cy="20" rx="10" ry="13" fill="#1B4F72" opacity="0.11"/>
+            <ellipse cx="90" cy="26" rx="9" ry="12" fill="#1B4F72" opacity="0.10"/>
+            <ellipse cx="101" cy="34" rx="8" ry="10" fill="#1B4F72" opacity="0.09"/>
+            <ellipse cx="60" cy="72" rx="40" ry="30" fill="#1B4F72" opacity="0.10"/>
+            <ellipse cx="82" cy="130" rx="22" ry="38" fill="#1B4F72" opacity="0.07"/>
+            <ellipse cx="66" cy="192" rx="36" ry="26" fill="#1B4F72" opacity="0.12"/>
+            <ellipse cx="42" cy="145" rx="18" ry="50" fill="#1B4F72" opacity="0.07"/>
+            `}
+          </svg>
+          <div style="position:absolute;width:14px;height:14px;background:#A63228;border:2px solid #fff;border-radius:50%;box-shadow:0 2px 6px rgba(166,50,40,.5);transform:translate(-50%,-50%);left:${m.x_percent}%;top:${m.y_percent}%"></div>
+        </div>
+      </div>`;
+    }
+    markersHtml+='</div></div>';
+  }
+
+  body.innerHTML=`
+    <div class="modal-section" style="display:flex;gap:16px;flex-wrap:wrap">
+      <div style="flex:1;min-width:120px">
+        <div class="modal-section-title">Pain Level</div>
+        <div style="font-family:var(--font-display);font-size:2.2rem;color:${pColor}">${pain}<span style="font-size:1rem;color:var(--c-muted)">/10</span></div>
+        <div style="font-size:0.85rem;color:var(--c-muted)">${PAIN_LABELS[pain]}</div>
+      </div>
+      ${log.pre_meal_glucose||log.post_meal_glucose?`
+      <div style="flex:1;min-width:120px">
+        <div class="modal-section-title">Blood Sugar</div>
+        ${log.pre_meal_glucose?`<div style="margin-bottom:4px"><span class="glucose-pill ${log.pre_meal_glucose>130?'glucose-high':'glucose-ok'}">Pre-meal: ${log.pre_meal_glucose} mg/dL</span></div>`:''}
+        ${log.post_meal_glucose?`<div><span class="glucose-pill ${log.post_meal_glucose>180?'glucose-high':'glucose-ok'}">Post-meal: ${log.post_meal_glucose} mg/dL</span></div>`:''}
+      </div>`:''}
+    </div>
+    ${log.symptoms?.length?`<div class="modal-section"><div class="modal-section-title">Symptoms</div><div class="log-chips">${log.symptoms.map(s=>`<span class="chip">${s.replace(/_/g,' ')}</span>`).join('')}</div></div>`:''}
+    ${imagesHtml}
+    ${markersHtml}
+    ${log.remarks?`<div class="modal-section"><div class="modal-section-title">Remarks</div><p style="font-size:0.9rem;color:var(--c-text);line-height:1.7;font-style:italic">"${log.remarks}"</p></div>`:''}`;
+}
+
+function closeLogModal() { document.getElementById('log-modal').classList.remove('open'); }
+function closeModal(e) { if(e.target===e.currentTarget) closeLogModal(); }
+
+/* ── DOCTOR SEARCH ── */
+async function handleSearch() {
+  const code = document.getElementById('search-code').value.toUpperCase().trim();
+  const errEl = document.getElementById('search-error');
+  errEl.style.display='none';
+  if (!/^[A-Z0-9]{4}$/.test(code)) {
+    errEl.textContent='Please enter a valid 4-character patient code (e.g. A8F9)';
+    errEl.style.display=''; return;
+  }
+  const btn=document.getElementById('search-btn');
+  btn.innerHTML='<span class="loader"></span>'; btn.disabled=true;
+  document.getElementById('patient-result').style.display='none';
+  document.getElementById('doctor-logs-section').style.display='none';
+  try {
+    const {data:profile,error} = await db.from('patient_profiles')
+      .select('*').eq('patient_code',code).single();
+    if (error||!profile) throw new Error(`No patient found with code "${code}". Please check and try again.`);
+    const {data:userRow} = await db.from('users').select('full_name,email').eq('id',profile.user_id).single();
+    const displayName = userRow?.full_name||'Patient';
+    const initials = displayName.split(' ').map(n=>n[0]).join('').toUpperCase().slice(0,2);
+    const diabetesLabel = profile.diabetes_type?`Type ${profile.diabetes_type.replace('type','')} diabetes`:'';
+    document.getElementById('patient-result').style.display='';
+    document.getElementById('patient-result').innerHTML=`
+      <div class="patient-result">
+        <div class="patient-result-info">
+          <div class="patient-result-avatar">${initials}</div>
+          <div>
+            <div class="patient-result-name">${displayName}</div>
+            <div class="patient-result-code">Code: ${profile.patient_code}</div>
+            ${diabetesLabel?`<div class="patient-result-meta">${diabetesLabel}</div>`:''}
+            ${userRow?.email?`<div class="patient-result-meta">${userRow.email}</div>`:''}
+          </div>
+        </div>
+        <button class="btn btn-primary btn-sm" onclick="loadDoctorPatientLogs('${profile.id}','${displayName}')">View Records →</button>
+      </div>`;
+  } catch(e) {
+    errEl.textContent=e.message; errEl.style.display='';
+  } finally {
+    btn.textContent='Search'; btn.disabled=false;
+  }
+}
+
+async function loadDoctorPatientLogs(patientId, patientName) {
+  const section=document.getElementById('doctor-logs-section');
+  const list=document.getElementById('doctor-logs-list');
+  section.style.display='';
+  const heading=document.querySelector('#doctor-logs-section h3');
+  if (heading&&patientName) heading.textContent=patientName+"'s Health Logs";
+  list.innerHTML=`<div class="loading-state"><span class="loader loader-dark"></span> Loading records…</div>`;
+  const {data:logs,error} = await db.from('patient_logs')
+    .select('*,images:log_images(*),foot_markers:foot_markers(*)')
+    .eq('patient_id',patientId)
+    .order('log_date',{ascending:false})
+    .limit(30);
+  if (error) { list.innerHTML=`<div class="empty-state"><div class="empty-icon">⚠️</div><div class="empty-title">Could not load logs</div><div class="empty-sub">${error.message}</div></div>`; return; }
+  if (!logs?.length) { list.innerHTML=`<div class="empty-state"><div class="empty-icon">📋</div><div class="empty-title">No logs recorded</div><div class="empty-sub">This patient has not submitted any health logs yet.</div></div>`; return; }
+  list.innerHTML=logs.map(log=>buildLogCard(log)).join('');
+  list.querySelectorAll('.log-item').forEach((el,i)=>{ el.onclick=()=>openLogModal(logs[i].id); });
+}
+
+/* ── PROFILE ── */
+function loadProfile() {
+  const el=document.getElementById('profile-content');
+  const initials=currentUser.full_name.split(' ').map(n=>n[0]).join('').toUpperCase().slice(0,2);
+  el.innerHTML=`
+    <div style="display:flex;align-items:center;gap:16px;margin-bottom:20px">
+      <div style="width:60px;height:60px;border-radius:50%;background:var(--c-primary);color:#fff;font-size:1.3rem;font-weight:700;display:flex;align-items:center;justify-content:center">${initials}</div>
+      <div>
+        <div style="font-weight:700;font-size:1.05rem">${currentUser.full_name}</div>
+        <div style="color:var(--c-muted);font-size:0.85rem">${currentUser.email}</div>
+        <div style="margin-top:4px"><span style="background:${currentUser.role==='patient'?'#EBF3FA':'#E8F6F3'};color:${currentUser.role==='patient'?'#1B4F72':'#1A6645'};padding:3px 10px;border-radius:20px;font-size:0.75rem;font-weight:600;text-transform:uppercase">${currentUser.role}</span></div>
+      </div>
+    </div>
+    ${currentUser.role==='patient'&&currentProfile?`
+    <div class="divider"></div>
+    <div class="section-title">Patient Code</div>
+    <div class="code-badge" style="margin:0">
+      <div>
+        <div class="code-badge-label">Share with your doctor</div>
+        <div class="code-badge-value">${currentProfile.patient_code}</div>
+      </div>
+      <button class="code-copy-btn" onclick="copyCode('${currentProfile.patient_code}')">📋 Copy</button>
+    </div>`:''}
+    <div class="divider"></div>
+    <button class="btn btn-ghost btn-full" onclick="handleLogout()">Sign Out</button>`;
+}
+
+/* ── INIT ── */
+async function init() {
+  if (!isConfigured) { setTimeout(()=>showView('auth'),2000); return; }
+  const splashStart = Date.now();
+  try {
+    const {data:{session}} = await db.auth.getSession();
+    const delay = Math.max(0, 2500-(Date.now()-splashStart));
+    if (session?.user) {
+      setTimeout(async()=>{ try { await loadUserAndEnter(session.user.id); } catch { showView('auth'); } }, delay);
+    } else {
+      setTimeout(()=>showView('auth'), delay);
+    }
+  } catch { setTimeout(()=>showView('auth'),2000); }
+}
+init();
+</script>
+</body>
+</html>
