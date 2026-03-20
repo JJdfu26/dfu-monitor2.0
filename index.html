@@ -10,10 +10,25 @@
   Get from: Supabase Dashboard → Settings → API
 ============================================================ -->
 <script>
-  const SUPABASE_URL      = 'https://tgnjbdcabchvwwgijgfb.supabase.co';
-  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRnbmpiZGNhYmNodnd3Z2lqZ2ZiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM2NDg2ODYsImV4cCI6MjA4OTIyNDY4Nn0._drqsrHVB8-V4Iefr141ZW9QcCxqcH1cuLP4U92z0Gk';
+  const SUPABASE_URL      = 'YOUR_SUPABASE_URL';
+  const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY';
 </script>
 <!-- ============================================================ -->
+<!-- PWA Meta Tags -->
+<meta name="application-name" content="DFU Monitor">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="DFU Monitor">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#1B4F72">
+<meta name="description" content="Diabetic Foot Ulcer Monitoring — Grant Medical College & MICE Labs">
+
+<!-- PWA Manifest -->
+<link rel="manifest" href="manifest.json">
+
+<!-- iOS splash / icon (uses the inline icon defined below) -->
+<link rel="apple-touch-icon" href="icon-192.png">
+
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
@@ -551,6 +566,21 @@ textarea{resize:vertical;min-height:90px}
 </div>
 
 <div class="toast" id="toast"></div>
+
+<!-- PWA Install Banner -->
+<div id="pwa-banner" style="display:none;position:fixed;bottom:0;left:0;right:0;background:#1B4F72;color:#fff;padding:14px 20px;z-index:9999;display:none;align-items:center;justify-content:space-between;gap:12px;box-shadow:0 -4px 20px rgba(0,0,0,0.2)">
+  <div style="display:flex;align-items:center;gap:12px">
+    <span style="font-size:28px">🦶</span>
+    <div>
+      <div style="font-weight:600;font-size:0.9rem">Install DFU Monitor</div>
+      <div style="font-size:0.75rem;opacity:0.8">Add to your home screen for quick access</div>
+    </div>
+  </div>
+  <div style="display:flex;gap:8px;flex-shrink:0">
+    <button onclick="dismissPWA()" style="background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);color:#fff;padding:7px 14px;border-radius:20px;font-size:0.82rem;cursor:pointer;font-family:var(--font-body)">Not now</button>
+    <button onclick="installPWA()" style="background:#fff;border:none;color:#1B4F72;padding:7px 16px;border-radius:20px;font-size:0.82rem;font-weight:700;cursor:pointer;font-family:var(--font-body)">Install</button>
+  </div>
+</div>
 
 <script>
 const isConfigured = SUPABASE_URL !== 'YOUR_SUPABASE_URL';
@@ -1268,6 +1298,55 @@ async function handleSetNewPassword(){
 }
 
 init();
+
+/* ── PWA INSTALL ── */
+let deferredPrompt = null;
+
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  deferredPrompt = e;
+  // Show install banner after 3 seconds if not already installed
+  setTimeout(() => {
+    const banner = document.getElementById('pwa-banner');
+    if (banner && !window.matchMedia('(display-mode: standalone)').matches) {
+      banner.style.display = 'flex';
+    }
+  }, 3000);
+});
+
+async function installPWA() {
+  const banner = document.getElementById('pwa-banner');
+  if (banner) banner.style.display = 'none';
+  if (deferredPrompt) {
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    deferredPrompt = null;
+    if (outcome === 'accepted') {
+      showToast('App installed! Check your home screen ✓', 'success');
+    }
+  }
+}
+
+function dismissPWA() {
+  const banner = document.getElementById('pwa-banner');
+  if (banner) banner.style.display = 'none';
+  // Don't show again for this session
+  sessionStorage.setItem('pwa-dismissed', '1');
+}
+
+// Register service worker for offline support
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js')
+      .then(() => console.log('DFU Monitor: Service worker registered'))
+      .catch(err => console.log('SW registration failed:', err));
+  });
+}
+
+// If already running as installed PWA, hide any install UI
+if (window.matchMedia('(display-mode: standalone)').matches) {
+  document.getElementById('pwa-banner') && (document.getElementById('pwa-banner').style.display = 'none');
+}
 </script>
 </body>
 </html>
