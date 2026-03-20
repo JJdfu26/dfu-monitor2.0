@@ -1181,9 +1181,15 @@ async function openLogModal(logId){
   // foot_markers can come back as array, single object, or null depending on Supabase
   let rawMarkers = log.foot_markers || log.foot_marker || [];
   if(!Array.isArray(rawMarkers)) rawMarkers = rawMarkers ? [rawMarkers] : [];
+
+  // Direct DB fetch as fallback if join didn't return markers
+  if(rawMarkers.length === 0){
+    const {data:fm} = await db.from('foot_markers').select('*').eq('log_id',logId);
+    if(fm && fm.length > 0) rawMarkers = fm;
+  }
+
   const markers = rawMarkers.filter(m => m && m.x_percent != null);
-  // DEBUG — remove after confirming fix
-  alert('DEBUG: foot_markers = ' + JSON.stringify(log.foot_markers) + '\nraw= ' + JSON.stringify(rawMarkers) + '\nmarkers count= ' + markers.length);
+  showToast('Markers found: ' + markers.length, markers.length > 0 ? 'success' : 'error');
   if(markers.length){
     markersHtml=`<div class="modal-section"><div class="modal-section-title">📍 Ulcer Location</div><div style="display:flex;gap:16px;flex-wrap:wrap">`;
     for(const m of markers){
