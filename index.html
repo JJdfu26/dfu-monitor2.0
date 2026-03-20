@@ -834,7 +834,7 @@ function buildLogCard(log){
     log.post_meal_glucose?`<span class="glucose-pill ${log.post_meal_glucose>180?'glucose-high':'glucose-ok'}">Post: ${log.post_meal_glucose}</span>`:'',
   ].join('');
   const imgs=log.images?.length?`<span class="chip chip-blue">📷 ${log.images.length} photo${log.images.length>1?'s':''}</span>`:'';
-  return `<div class="log-item" data-logid="${log.id}">
+  return `<div class="log-item" data-logid="${log.id}" onclick="window.openLogModal(this.getAttribute('data-logid'))">
     <div class="log-item-header">
       <span class="log-date">${new Date(log.log_date).toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric',year:'numeric'})}</span>
       <span class="pain-badge ${pClass}">Pain ${pain}/10</span>
@@ -1156,6 +1156,7 @@ async function openPatientDetail(patientId, patientName, userId){
 
 /* ── LOG DETAIL MODAL ── */
 async function openLogModal(logId){
+window.openLogModal=openLogModal; // ensure globally accessible
   const modal=document.getElementById('log-modal');
   const body=document.getElementById('modal-body');
   modal.classList.add('open');
@@ -1360,6 +1361,34 @@ if ('serviceWorker' in navigator) {
 if (window.matchMedia('(display-mode: standalone)').matches) {
   document.getElementById('pwa-banner') && (document.getElementById('pwa-banner').style.display = 'none');
 }
+
+// Expose all functions used in inline HTML to window scope
+if(typeof showPage!=="undefined") window.showPage=showPage;
+if(typeof prepareNewLog!=="undefined") window.prepareNewLog=prepareNewLog;
+if(typeof loadProfile!=="undefined") window.loadProfile=loadProfile;
+if(typeof handleLogin!=="undefined") window.handleLogin=handleLogin;
+if(typeof handleSignup!=="undefined") window.handleSignup=handleSignup;
+if(typeof handleLogout!=="undefined") window.handleLogout=handleLogout;
+if(typeof handleForgotPassword!=="undefined") window.handleForgotPassword=handleForgotPassword;
+if(typeof handleSetNewPassword!=="undefined") window.handleSetNewPassword=handleSetNewPassword;
+if(typeof switchAuthTab!=="undefined") window.switchAuthTab=switchAuthTab;
+if(typeof selectRole!=="undefined") window.selectRole=selectRole;
+if(typeof showForgotPassword!=="undefined") window.showForgotPassword=showForgotPassword;
+if(typeof showLogin!=="undefined") window.showLogin=showLogin;
+if(typeof installPWA!=="undefined") window.installPWA=installPWA;
+if(typeof dismissPWA!=="undefined") window.dismissPWA=dismissPWA;
+if(typeof openPatientDetail!=="undefined") window.openPatientDetail=openPatientDetail;
+if(typeof handleSearch!=="undefined") window.handleSearch=handleSearch;
+if(typeof handleSearchInput!=="undefined") window.handleSearchInput=handleSearchInput;
+if(typeof closeLogModal!=="undefined") window.closeLogModal=closeLogModal;
+if(typeof copyCode!=="undefined") window.copyCode=copyCode;
+if(typeof toggleSymptom!=="undefined") window.toggleSymptom=toggleSymptom;
+if(typeof setPain!=="undefined") window.setPain=setPain;
+if(typeof handleFootTap!=="undefined") window.handleFootTap=handleFootTap;
+if(typeof removeImage!=="undefined") window.removeImage=removeImage;
+if(typeof handleFileSelect!=="undefined") window.handleFileSelect=handleFileSelect;
+if(typeof handleSaveLog!=="undefined") window.handleSaveLog=handleSaveLog;
+if(typeof handleSaveLog!=="undefined") window.handleSaveLog=handleSaveLog;
 
 // Global click handler for log item cards
 document.addEventListener('click', function(e){
