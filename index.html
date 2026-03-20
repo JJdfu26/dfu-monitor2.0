@@ -781,14 +781,14 @@ async function loadPatientProfile(){
 async function loadDashboard(){
   showPage('dashboard');
   if(!currentProfile)return;
+  // Greeting header
+  const firstName = currentUser.full_name.split(' ')[0];
+  const hour = new Date().getHours();
+  const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
   document.getElementById('code-badge-wrap').innerHTML=`
-    <div class="code-badge">
-      <div>
-        <div class="code-badge-label">Your Patient Code</div>
-        <div class="code-badge-value">${currentProfile.patient_code}</div>
-        <div class="code-badge-hint">Share with your doctor if needed</div>
-      </div>
-      <button class="code-copy-btn" onclick="copyCode('${currentProfile.patient_code}')">📋 Copy</button>
+    <div style="margin-bottom:20px">
+      <div style="font-family:var(--font-display);font-size:1.6rem;color:var(--c-primary)">${greeting}, ${firstName} 👋</div>
+      <div style="font-size:0.88rem;color:var(--c-muted);margin-top:4px">Track your foot health below</div>
     </div>`;
   document.getElementById('logs-list').innerHTML=`<div class="loading-state"><span class="loader loader-dark"></span> Loading…</div>`;
   const {data:logs}=await db.from('patient_logs')
