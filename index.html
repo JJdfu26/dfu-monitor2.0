@@ -1182,7 +1182,8 @@ async function openLogModal(logId){
   let rawMarkers = log.foot_markers || log.foot_marker || [];
   if(!Array.isArray(rawMarkers)) rawMarkers = rawMarkers ? [rawMarkers] : [];
   const markers = rawMarkers.filter(m => m && m.x_percent != null);
-  console.log('Foot markers found:', markers.length, markers);
+  // DEBUG — remove after confirming fix
+  alert('DEBUG: foot_markers = ' + JSON.stringify(log.foot_markers) + '\nraw= ' + JSON.stringify(rawMarkers) + '\nmarkers count= ' + markers.length);
   if(markers.length){
     markersHtml=`<div class="modal-section"><div class="modal-section-title">📍 Ulcer Location</div><div style="display:flex;gap:16px;flex-wrap:wrap">`;
     for(const m of markers){
