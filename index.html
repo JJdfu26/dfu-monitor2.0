@@ -834,7 +834,7 @@ function buildLogCard(log){
     log.post_meal_glucose?`<span class="glucose-pill ${log.post_meal_glucose>180?'glucose-high':'glucose-ok'}">Post: ${log.post_meal_glucose}</span>`:'',
   ].join('');
   const imgs=log.images?.length?`<span class="chip chip-blue">📷 ${log.images.length} photo${log.images.length>1?'s':''}</span>`:'';
-  return `<div class="log-item" onclick="openLogModal('${log.id}')">
+  return `<div class="log-item" data-logid="${log.id}">
     <div class="log-item-header">
       <span class="log-date">${new Date(log.log_date).toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric',year:'numeric'})}</span>
       <span class="pain-badge ${pClass}">Pain ${pain}/10</span>
@@ -1151,12 +1151,11 @@ async function openPatientDetail(patientId, patientName, userId){
 
   document.getElementById('detail-patient-meta').textContent=`${logs.length} log${logs.length>1?'s':''}`;
   list.innerHTML=logs.map(log=>buildLogCard(log)).join('');
-  list.querySelectorAll('.log-item').forEach((el,i)=>{el.onclick=()=>openLogModal(logs[i].id)});
+  // onclick handled by global event delegation via data-logid attribute
 }
 
 /* ── LOG DETAIL MODAL ── */
 async function openLogModal(logId){
-  showToast("Opening log...", "");
   const modal=document.getElementById('log-modal');
   const body=document.getElementById('modal-body');
   modal.classList.add('open');
@@ -1361,6 +1360,15 @@ if ('serviceWorker' in navigator) {
 if (window.matchMedia('(display-mode: standalone)').matches) {
   document.getElementById('pwa-banner') && (document.getElementById('pwa-banner').style.display = 'none');
 }
+
+// Global click handler for log item cards
+document.addEventListener('click', function(e){
+  const logItem = e.target.closest('[data-logid]');
+  if(logItem){
+    const logId = logItem.getAttribute('data-logid');
+    if(logId) openLogModal(logId);
+  }
+});
 </script>
 </body>
 </html>
