@@ -1156,6 +1156,7 @@ async function openPatientDetail(patientId, patientName, userId){
 
 /* ── LOG DETAIL MODAL ── */
 async function openLogModal(logId){
+  showToast("Opening log...", "");
   const modal=document.getElementById('log-modal');
   const body=document.getElementById('modal-body');
   modal.classList.add('open');
