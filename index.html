@@ -11,7 +11,7 @@
 ============================================================ -->
 <script>
   const SUPABASE_URL      = 'https://tgnjbdcabchvwwgijgfb.supabase.co';
-  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRnbmpiZGNhYmNodnd3Z2lqZ2ZiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM2NDg2ODYsImV4cCI6MjA4OTIyNDY4Nn0._drqsrHVB8-V4Iefr141ZW9QcCxqcH1cuLP4U92z0Gk';
+  const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY';
 </script>
 <!-- ============================================================ -->
 <!-- PWA Meta Tags -->
@@ -223,12 +223,13 @@ input:focus,textarea:focus,select:focus{border-color:var(--c-primary);box-shadow
 .nav-tab{padding:7px 16px;border:none;background:transparent;border-radius:8px;font-family:var(--font-body);font-size:0.85rem;font-weight:500;color:var(--c-muted);cursor:pointer;transition:all 0.18s;display:flex;align-items:center;gap:6px}
 .nav-tab.active{background:var(--c-card);color:var(--c-primary);box-shadow:var(--shadow)}
 
-/* ── BOTTOM NAV (mobile only) ── */
-.bottom-nav{display:none;position:fixed;bottom:0;left:0;right:0;background:var(--c-card);border-top:1px solid var(--c-border);box-shadow:0 -2px 12px rgba(28,25,23,0.08);z-index:90;padding:6px 4px calc(6px + env(safe-area-inset-bottom)) 4px;justify-content:space-around;align-items:stretch;gap:2px}
+/* ── BOTTOM NAV (always shown, both mobile and desktop) ── */
+.nav-tabs-desktop{display:none !important}
+.bottom-nav{display:flex;position:fixed;bottom:0;left:0;right:0;background:var(--c-card);border-top:1px solid var(--c-border);box-shadow:0 -2px 12px rgba(28,25,23,0.08);z-index:90;padding:6px 4px calc(6px + env(safe-area-inset-bottom)) 4px;justify-content:space-around;align-items:stretch;gap:2px;max-width:900px;margin:0 auto}
 .bottom-nav .nav-tab{flex:1;flex-direction:column;gap:2px;padding:8px 4px;border-radius:10px;font-size:0.68rem;line-height:1.1;min-width:0;background:transparent;box-shadow:none;text-align:center}
 .bottom-nav .nav-tab span{font-size:0.68rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
 .bottom-nav .nav-tab.active{background:var(--c-bg);color:var(--c-primary);box-shadow:none}
-.bottom-nav .nav-tab:first-line{font-size:1.25rem}
+.app-content{padding-bottom:calc(90px + env(safe-area-inset-bottom)) !important}
 .glucose-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
 textarea{resize:vertical;min-height:90px}
 .divider{height:1px;background:var(--c-border);margin:20px 0}
@@ -243,16 +244,11 @@ textarea{resize:vertical;min-height:90px}
 .ai-section{padding:8px 0;border-bottom:1px solid rgba(0,0,0,0.06)}
 .ai-section-label{font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:0.6px;color:var(--c-muted);margin-bottom:4px}
 .ai-section-text{font-size:0.88rem;color:var(--c-text);line-height:1.6}
-@media(max-width:768px){
-  .nav-tabs-desktop{display:none !important}
-  .bottom-nav{display:flex}
-  .app-content{padding-bottom:calc(80px + env(safe-area-inset-bottom)) !important}
-}
 @media(max-width:480px){
   .topbar{padding:0 12px;height:54px}
   .topbar-brand{font-size:1.05rem}
   .nav-tab{padding:6px 8px;font-size:0.78rem}
-  .app-content{padding:12px;padding-bottom:calc(80px + env(safe-area-inset-bottom))}
+  .app-content{padding:12px;padding-bottom:calc(90px + env(safe-area-inset-bottom))}
   .card{padding:16px}
   .card-title{font-size:1.05rem}
   .code-badge{padding:16px;flex-direction:column;gap:10px}
