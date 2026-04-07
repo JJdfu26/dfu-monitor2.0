@@ -222,6 +222,13 @@ input:focus,textarea:focus,select:focus{border-color:var(--c-primary);box-shadow
 .nav-tabs{display:flex;gap:4px;background:var(--c-bg);border-radius:var(--r-md);padding:4px}
 .nav-tab{padding:7px 16px;border:none;background:transparent;border-radius:8px;font-family:var(--font-body);font-size:0.85rem;font-weight:500;color:var(--c-muted);cursor:pointer;transition:all 0.18s;display:flex;align-items:center;gap:6px}
 .nav-tab.active{background:var(--c-card);color:var(--c-primary);box-shadow:var(--shadow)}
+
+/* ── BOTTOM NAV (mobile only) ── */
+.bottom-nav{display:none;position:fixed;bottom:0;left:0;right:0;background:var(--c-card);border-top:1px solid var(--c-border);box-shadow:0 -2px 12px rgba(28,25,23,0.08);z-index:90;padding:6px 4px calc(6px + env(safe-area-inset-bottom)) 4px;justify-content:space-around;align-items:stretch;gap:2px}
+.bottom-nav .nav-tab{flex:1;flex-direction:column;gap:2px;padding:8px 4px;border-radius:10px;font-size:0.68rem;line-height:1.1;min-width:0;background:transparent;box-shadow:none;text-align:center}
+.bottom-nav .nav-tab span{font-size:0.68rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.bottom-nav .nav-tab.active{background:var(--c-bg);color:var(--c-primary);box-shadow:none}
+.bottom-nav .nav-tab:first-line{font-size:1.25rem}
 .glucose-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
 textarea{resize:vertical;min-height:90px}
 .divider{height:1px;background:var(--c-border);margin:20px 0}
@@ -236,11 +243,16 @@ textarea{resize:vertical;min-height:90px}
 .ai-section{padding:8px 0;border-bottom:1px solid rgba(0,0,0,0.06)}
 .ai-section-label{font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:0.6px;color:var(--c-muted);margin-bottom:4px}
 .ai-section-text{font-size:0.88rem;color:var(--c-text);line-height:1.6}
+@media(max-width:768px){
+  .nav-tabs-desktop{display:none !important}
+  .bottom-nav{display:flex}
+  .app-content{padding-bottom:calc(80px + env(safe-area-inset-bottom)) !important}
+}
 @media(max-width:480px){
   .topbar{padding:0 12px;height:54px}
   .topbar-brand{font-size:1.05rem}
   .nav-tab{padding:6px 8px;font-size:0.78rem}
-  .app-content{padding:12px}
+  .app-content{padding:12px;padding-bottom:calc(80px + env(safe-area-inset-bottom))}
   .card{padding:16px}
   .card-title{font-size:1.05rem}
   .code-badge{padding:16px;flex-direction:column;gap:10px}
@@ -384,7 +396,7 @@ textarea{resize:vertical;min-height:90px}
   <div class="topbar">
     <div class="topbar-brand"><span>🦶</span><span>DFU Monitor</span></div>
     <div class="topbar-right">
-      <div class="nav-tabs" id="main-nav"></div>
+      <div class="nav-tabs nav-tabs-desktop" id="main-nav-desktop"></div>
       <div style="display:flex;align-items:center;gap:8px">
         <span id="topbar-name" style="font-size:0.82rem;color:var(--c-muted)"></span>
         <div class="avatar" id="topbar-avatar"></div>
@@ -631,11 +643,11 @@ textarea{resize:vertical;min-height:90px}
               <div style="font-size:0.95rem;font-weight:600;color:var(--c-primary)">+91 86571 34618</div>
             </div>
           </a>
-          <a href="mailto:themicelabs@gmail.com" style="display:flex;align-items:center;gap:14px;padding:14px;background:var(--c-surface);border:1px solid var(--c-border);border-radius:var(--r-md);text-decoration:none;color:var(--c-text);transition:all 0.15s">
+          <a id="contact-email-link" href="#" style="display:flex;align-items:center;gap:14px;padding:14px;background:var(--c-surface);border:1px solid var(--c-border);border-radius:var(--r-md);text-decoration:none;color:var(--c-text);transition:all 0.15s" data-u="themicelabs" data-d="gmail.com">
             <div style="font-size:1.6rem">✉️</div>
             <div>
               <div style="font-size:0.72rem;color:var(--c-muted);text-transform:uppercase;letter-spacing:0.5px;font-weight:600">Email</div>
-              <div style="font-size:0.95rem;font-weight:600;color:var(--c-primary)">themicelabs@gmail.com</div>
+              <div id="contact-email-text" style="font-size:0.95rem;font-weight:600;color:var(--c-primary)"></div>
             </div>
           </a>
           <a href="https://www.micelabs.in" target="_blank" rel="noopener" style="display:flex;align-items:center;gap:14px;padding:14px;background:var(--c-surface);border:1px solid var(--c-border);border-radius:var(--r-md);text-decoration:none;color:var(--c-text);transition:all 0.15s">
@@ -650,6 +662,9 @@ textarea{resize:vertical;min-height:90px}
     </div>
 
   </div>
+
+  <!-- Mobile bottom navbar (shown only on narrow screens via CSS) -->
+  <nav class="bottom-nav" id="main-nav-mobile" aria-label="Primary"></nav>
 </div>
 
 <!-- PILOT FEEDBACK MODAL -->
@@ -935,21 +950,27 @@ async function enterApp(){
   const initials=currentUser.full_name.split(' ').map(n=>n[0]).join('').toUpperCase().slice(0,2);
   document.getElementById('topbar-name').textContent=currentUser.full_name.split(' ')[0];
   document.getElementById('topbar-avatar').textContent=initials;
-  const nav=document.getElementById('main-nav');
+  const navDesktop=document.getElementById('main-nav-desktop');
+  const navMobile=document.getElementById('main-nav-mobile');
+  let navHtml='';
   if(currentUser.role==='patient'){
-    nav.innerHTML=`
+    navHtml=`
       <button class="nav-tab active" data-page="dashboard" onclick="showPage('dashboard')">🏠 <span>Home</span></button>
       <button class="nav-tab" data-page="new-log" onclick="prepareNewLog()">➕ <span>New Log</span></button>
       <button class="nav-tab" data-page="feedback" onclick="showFeedbackPage()">💬 <span>Feedback</span></button>
       <button class="nav-tab" data-page="profile" onclick="showPage('profile');loadProfile()">👤 <span>Profile</span></button>`;
+    navDesktop.innerHTML=navHtml;
+    navMobile.innerHTML=navHtml;
     await loadPatientProfile();
     await loadDashboard();
     buildNewLogForm();
   } else {
-    nav.innerHTML=`
+    navHtml=`
       <button class="nav-tab active" data-page="search" onclick="showPage('search')">🔍 <span>Search</span></button>
       <button class="nav-tab" data-page="feedback" onclick="showFeedbackPage()">💬 <span>Feedback</span></button>
       <button class="nav-tab" data-page="profile" onclick="showPage('profile');loadProfile()">👤 <span>Profile</span></button>`;
+    navDesktop.innerHTML=navHtml;
+    navMobile.innerHTML=navHtml;
     showPage('search');
   }
   showView('app');
@@ -1687,6 +1708,16 @@ function showFeedbackPage(){
   if(lbl) lbl.textContent = isDoc
     ? 'How useful is the recorded data for clinical review?'
     : 'How useful is this for tracking your condition?';
+  // Assemble email contact at runtime (avoids static email literals being rewritten)
+  const emailLink = document.getElementById('contact-email-link');
+  if(emailLink){
+    const u = emailLink.getAttribute('data-u') || '';
+    const d = emailLink.getAttribute('data-d') || '';
+    const addr = u + String.fromCharCode(64) + d;
+    emailLink.setAttribute('href', 'mailto:' + addr);
+    const txt = document.getElementById('contact-email-text');
+    if(txt) txt.textContent = addr;
+  }
   resetFeedbackPageForm();
   showPage('feedback');
 }
@@ -1902,14 +1933,4 @@ if(typeof setFbpUseful!=="undefined") window.setFbpUseful=setFbpUseful;
 if(typeof showFeedbackPage!=="undefined") window.showFeedbackPage=showFeedbackPage;
 if(typeof submitFeedbackFromPage!=="undefined") window.submitFeedbackFromPage=submitFeedbackFromPage;
 
-// Global click handler for log item cards
-document.addEventListener('click', function(e){
-  const logItem = e.target.closest('[data-logid]');
-  if(logItem){
-    const logId = logItem.getAttribute('data-logid');
-    if(logId) openLogModal(logId);
-  }
-});
-</script>
-</body>
-</html>
+// Global click handler for log it
