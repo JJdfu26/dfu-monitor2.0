@@ -231,6 +231,11 @@ textarea{resize:vertical;min-height:90px}
 .info-box strong{display:block;margin-bottom:4px;font-size:0.9rem}
 
 /* ── RESPONSIVE ── */
+.ai-card{border:1.5px solid var(--c-border);border-radius:var(--r-lg);padding:16px;margin-bottom:20px;background:var(--c-surface)}
+.ai-card-header{display:flex;align-items:center;gap:8px;font-weight:700;font-size:0.95rem;margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid rgba(0,0,0,0.08)}
+.ai-section{padding:8px 0;border-bottom:1px solid rgba(0,0,0,0.06)}
+.ai-section-label{font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:0.6px;color:var(--c-muted);margin-bottom:4px}
+.ai-section-text{font-size:0.88rem;color:var(--c-text);line-height:1.6}
 @media(max-width:480px){
   .topbar{padding:0 12px;height:54px}
   .topbar-brand{font-size:1.05rem}
@@ -261,6 +266,20 @@ textarea{resize:vertical;min-height:90px}
   .pain-btn{width:28px;height:28px;font-size:0.75rem}
   .foot-diagram-container{width:105px;height:196px}
 }
+
+/* ── PILOT FEEDBACK MODAL ── */
+.fb-field{margin-bottom:18px}
+.fb-label{display:block;font-size:0.88rem;font-weight:600;color:var(--c-text);margin-bottom:8px}
+.fb-err{color:var(--c-danger);font-size:0.78rem;margin-top:4px;min-height:14px}
+.fb-stars{display:flex;gap:6px}
+.fb-star{background:none;border:none;font-size:2rem;line-height:1;color:#DDD8D0;cursor:pointer;padding:2px 4px;transition:transform .12s,color .12s}
+.fb-star:hover{transform:scale(1.1)}
+.fb-star.active{color:#E8B341}
+.fb-scale{display:flex;gap:6px}
+.fb-scale button{flex:1;padding:10px 0;background:var(--c-surface);border:1.5px solid var(--c-border);border-radius:var(--r-md);font-family:var(--font-body);font-size:0.95rem;font-weight:600;color:var(--c-text);cursor:pointer;transition:all .15s}
+.fb-scale button:hover{border-color:var(--c-primary)}
+.fb-scale button.active{background:var(--c-primary);color:#fff;border-color:var(--c-primary)}
+.fb-scale-labels{display:flex;justify-content:space-between;font-size:0.72rem;color:var(--c-muted);margin-top:5px}
 </style>
 </head>
 <body>
@@ -551,6 +570,67 @@ textarea{resize:vertical;min-height:90px}
   </div>
 </div>
 
+<!-- PILOT FEEDBACK MODAL -->
+<div class="modal-overlay" id="feedback-modal" onclick="if(event.target===this)closeFeedbackModal()">
+  <div class="modal" style="max-width:480px">
+    <div class="modal-header">
+      <span class="modal-title" id="feedback-title">We'd love your feedback</span>
+      <button class="modal-close" onclick="closeFeedbackModal()" aria-label="Close">✕</button>
+    </div>
+    <div class="modal-body">
+      <p id="feedback-intro" style="font-size:0.92rem;color:var(--c-muted);margin-bottom:18px;line-height:1.55">
+        You're part of our pilot — your input will shape the final product. This takes under a minute.
+      </p>
+
+      <div class="fb-field">
+        <label class="fb-label">Overall experience</label>
+        <div class="fb-stars" id="fb-stars" role="radiogroup" aria-label="Overall rating">
+          <button type="button" class="fb-star" data-val="1" onclick="setFbRating(1)">★</button>
+          <button type="button" class="fb-star" data-val="2" onclick="setFbRating(2)">★</button>
+          <button type="button" class="fb-star" data-val="3" onclick="setFbRating(3)">★</button>
+          <button type="button" class="fb-star" data-val="4" onclick="setFbRating(4)">★</button>
+          <button type="button" class="fb-star" data-val="5" onclick="setFbRating(5)">★</button>
+        </div>
+        <div class="fb-err" id="fb-rating-err"></div>
+      </div>
+
+      <div class="fb-field">
+        <label class="fb-label">How easy was it to use?</label>
+        <div class="fb-scale" id="fb-ease">
+          <button type="button" data-val="1" onclick="setFbEase(1)">1</button>
+          <button type="button" data-val="2" onclick="setFbEase(2)">2</button>
+          <button type="button" data-val="3" onclick="setFbEase(3)">3</button>
+          <button type="button" data-val="4" onclick="setFbEase(4)">4</button>
+          <button type="button" data-val="5" onclick="setFbEase(5)">5</button>
+        </div>
+        <div class="fb-scale-labels"><span>Very hard</span><span>Very easy</span></div>
+      </div>
+
+      <div class="fb-field">
+        <label class="fb-label" id="fb-useful-label">How useful was this for tracking your condition?</label>
+        <div class="fb-scale" id="fb-useful">
+          <button type="button" data-val="1" onclick="setFbUseful(1)">1</button>
+          <button type="button" data-val="2" onclick="setFbUseful(2)">2</button>
+          <button type="button" data-val="3" onclick="setFbUseful(3)">3</button>
+          <button type="button" data-val="4" onclick="setFbUseful(4)">4</button>
+          <button type="button" data-val="5" onclick="setFbUseful(5)">5</button>
+        </div>
+        <div class="fb-scale-labels"><span>Not useful</span><span>Very useful</span></div>
+      </div>
+
+      <div class="fb-field">
+        <label class="fb-label" for="fb-comments">Comments, bugs, or suggestions <span style="color:var(--c-muted);font-weight:400">(optional)</span></label>
+        <textarea id="fb-comments" rows="3" placeholder="Anything confusing? Anything missing? Tell us…" style="width:100%;padding:10px 12px;border:1px solid var(--c-border);border-radius:var(--r-md);font-family:var(--font-body);font-size:0.9rem;resize:vertical;background:var(--c-surface);color:var(--c-text)"></textarea>
+      </div>
+
+      <div style="display:flex;gap:10px;margin-top:20px">
+        <button class="btn" onclick="closeFeedbackModal()" style="flex:1;background:var(--c-surface);color:var(--c-text);border:1px solid var(--c-border)">Maybe later</button>
+        <button class="btn btn-primary" onclick="submitFeedback()" id="fb-submit-btn" style="flex:2">Submit feedback</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- LOG DETAIL MODAL -->
 <div class="modal-overlay" id="log-modal" onclick="closeModal(event)">
   <div class="modal">
@@ -581,6 +661,9 @@ textarea{resize:vertical;min-height:90px}
 
 <script>
 const isConfigured = SUPABASE_URL !== 'YOUR_SUPABASE_URL';
+const GEMINI_KEY = 'AIzaSyChsIb9iJ3AtosrssVmiT5ZNQmJzR8hyH0';
+const GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=' + GEMINI_KEY;
+
 
 // Foot diagram images — available globally for both new log form and modal
 const FOOT_IMG = {
@@ -1049,9 +1132,14 @@ async function handleSaveLog(){
     }
 
     showToast('Log saved successfully! ✓','success');
+    const wasFirstLog = isFirstLog;
     resetNewLogForm();
     await loadPatientProfile();
     await loadDashboard();
+    // Show pilot feedback prompt once, right after first log
+    if(wasFirstLog && !fbAlreadySubmitted()){
+      setTimeout(()=>openFeedbackModal('after_first_log'), 1200);
+    }
   } catch(e){
     showToast('Save failed: '+e.message,'error');
     btn.textContent='Save Health Log';btn.disabled=false;
@@ -1157,6 +1245,13 @@ async function openPatientDetail(patientId, patientName, userId){
 /* ── LOG DETAIL MODAL ── */
 async function openLogModal(logId){
 window.openLogModal=openLogModal; // ensure globally accessible
+  // Count doctor log views for pilot feedback trigger
+  if(currentUser && currentUser.role==='doctor' && !fbAlreadySubmitted()){
+    const views = fbIncrementDoctorViews();
+    if(views === FB_DOCTOR_VIEW_THRESHOLD){
+      setTimeout(()=>openFeedbackModal('doctor_after_'+views+'_views'), 1500);
+    }
+  }
   const modal=document.getElementById('log-modal');
   const body=document.getElementById('modal-body');
   modal.classList.add('open');
@@ -1190,7 +1285,7 @@ window.openLogModal=openLogModal; // ensure globally accessible
   }
 
   const markers = rawMarkers.filter(m => m && m.x_percent != null);
-  showToast('Markers found: ' + markers.length, markers.length > 0 ? 'success' : 'error');
+  // AI trigger called after body renders (see setTimeout below)
   if(markers.length){
     markersHtml=`<div class="modal-section"><div class="modal-section-title">📍 Ulcer Location</div><div style="display:flex;gap:16px;flex-wrap:wrap">`;
     for(const m of markers){
@@ -1206,7 +1301,13 @@ window.openLogModal=openLogModal; // ensure globally accessible
     markersHtml+='</div></div>';
   }
 
-  body.innerHTML=`
+  // Inject AI loading card for doctors
+  if(currentUser && currentUser.role==='doctor'){
+    body.innerHTML='<div id="ai-card-wrap">' + buildAICard(null,true) + '</div>';
+  }
+
+  body.innerHTML=(currentUser && currentUser.role==='doctor' ? '<div id="ai-card-wrap">' + buildAICard(null,true) + '</div>' : '')
+  + `
     <div class="modal-section" style="display:flex;gap:16px;flex-wrap:wrap">
       <div style="flex:1;min-width:120px">
         <div class="modal-section-title">Pain Level</div>
@@ -1224,6 +1325,243 @@ window.openLogModal=openLogModal; // ensure globally accessible
     ${imagesHtml}${markersHtml}
     ${log.remarks?`<div class="modal-section"><div class="modal-section-title">Remarks</div><p style="font-size:0.9rem;color:var(--c-text);line-height:1.7;font-style:italic">"${log.remarks}"</p></div>`:''}`;
 }
+
+/* -- AI ANALYSIS -- */
+async function analyzeLogWithAI(log, patientProfile) {
+  try {
+    const symptoms = (log.symptoms || []).map(function(s){ return s.replace(/_/g,' '); }).join(', ') || 'None reported';
+    const painLabel = PAIN_LABELS[log.pain_scale] || String(log.pain_scale);
+    const footSides = log.foot_markers && log.foot_markers.length
+      ? log.foot_markers.map(function(m){ return m.foot_side + ' foot'; }).join(' and ')
+      : 'Not marked';
+
+    var promptText = 'You are a clinical assistant helping doctors monitor diabetic foot ulcer (DFU) patients.\n\n'
+      + 'PATIENT LOG DATA:\n'
+      + '- Pain Level: ' + log.pain_scale + '/10 (' + painLabel + ')\n'
+      + '- Pre-meal Glucose: ' + (log.pre_meal_glucose ? log.pre_meal_glucose + ' mg/dL' : 'Not recorded') + '\n'
+      + '- Post-meal Glucose: ' + (log.post_meal_glucose ? log.post_meal_glucose + ' mg/dL' : 'Not recorded') + '\n'
+      + '- Symptoms: ' + symptoms + '\n'
+      + '- Ulcer Location: ' + footSides + '\n'
+      + '- Patient Remarks: ' + (log.remarks || 'None') + '\n'
+      + (patientProfile && patientProfile.diabetes_type ? '- Diabetes Type: ' + patientProfile.diabetes_type + '\n' : '')
+      + '\n'
+      + (log.images && log.images.length ? 'WOUND PHOTOS: ' + log.images.length + ' photo(s) provided for visual analysis.\n' : 'WOUND PHOTOS: None provided.\n')
+      + '\nBased on this data' + (log.images && log.images.length ? ' and the wound photo(s)' : '') + ', provide:\n'
+      + '1. RISK LEVEL: exactly one word: LOW, MEDIUM, or HIGH\n'
+      + '2. WOUND ASSESSMENT: 2-3 sentences on wound condition\n'
+      + '3. CLINICAL CONCERN: 1-2 sentences on the most urgent concern\n'
+      + '4. RECOMMENDATION: 1 specific action the doctor should take\n\n'
+      + 'Respond ONLY with valid JSON exactly like this:\n'
+      + '{"risk_level":"HIGH","wound_assessment":"...","clinical_concern":"...","recommendation":"..."}';
+
+    var parts = [{ text: promptText }];
+
+    // Add up to 2 wound photos
+    if (log.images && log.images.length > 0) {
+      var imagesToSend = log.images.slice(0, 2);
+      for (var i = 0; i < imagesToSend.length; i++) {
+        try {
+          var signed = await db.storage.from('wound-images').createSignedUrl(imagesToSend[i].storage_path, 300);
+          if (signed.data && signed.data.signedUrl) {
+            var imgResp = await fetch(signed.data.signedUrl);
+            var blob = await imgResp.blob();
+            var base64 = await new Promise(function(resolve) {
+              var reader = new FileReader();
+              reader.onloadend = function(){ resolve(reader.result.split(',')[1]); };
+              reader.readAsDataURL(blob);
+            });
+            parts.push({ inline_data: { mime_type: 'image/jpeg', data: base64 } });
+          }
+        } catch(imgErr) { console.log('Image load error:', imgErr); }
+      }
+    }
+
+    var resp = await fetch(GEMINI_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ parts: parts }],
+        generationConfig: { temperature: 0.2, maxOutputTokens: 600 }
+      })
+    });
+
+    if (!resp.ok) {
+      var errData = await resp.json();
+      throw new Error(errData.error && errData.error.message ? errData.error.message : 'Gemini API error ' + resp.status);
+    }
+
+    var data = await resp.json();
+    var text = data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts && data.candidates[0].content.parts[0]
+      ? data.candidates[0].content.parts[0].text : '';
+
+    var jsonMatch = text.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) throw new Error('Could not parse AI response: ' + text.slice(0,100));
+    return JSON.parse(jsonMatch[0]);
+
+  } catch(err) {
+    console.error('AI error:', err);
+    return { error: err.message };
+  }
+}
+
+function buildAICard(result, loading) {
+  if (loading) {
+    return '<div class="ai-card"><div style="display:flex;align-items:center;gap:10px"><span class="loader loader-dark"></span><span style="font-size:0.88rem;color:var(--c-muted)">AI analysing wound data and photos\u2026</span></div></div>';
+  }
+  if (!result || result.error) {
+    return '<div class="ai-card"><div style="font-size:0.82rem;color:var(--c-muted)">\u26a0\ufe0f AI analysis unavailable' + (result && result.error ? ': ' + result.error : '') + '</div></div>';
+  }
+  var risk = (result.risk_level || 'UNKNOWN').toUpperCase();
+  var configs = {
+    HIGH:    { color:'#A63228', bg:'#FADBD8', border:'#E59A95', icon:'\uD83D\uDD34', label:'High Risk \u2014 Urgent Review' },
+    MEDIUM:  { color:'#884E05', bg:'#FCE6C5', border:'#F0BE7A', icon:'\uD83D\uDFE1', label:'Medium Risk \u2014 Monitor Closely' },
+    LOW:     { color:'#1E8449', bg:'#D4EFDF', border:'#82C99A', icon:'\uD83D\uDFE2', label:'Low Risk \u2014 Routine Follow-up' },
+    UNKNOWN: { color:'#6B6560', bg:'#F0EDE6', border:'#DDD8D0', icon:'\u26AA',       label:'Risk Unknown' }
+  };
+  var c = configs[risk] || configs.UNKNOWN;
+  var html = '<div class="ai-card" style="border-color:' + c.border + ';background:linear-gradient(135deg,' + c.bg + ',#fff)">'
+    + '<div class="ai-card-header" style="color:' + c.color + '">'
+    + '<span style="font-size:1.1rem">' + c.icon + '</span>'
+    + '<span>AI Assessment \u2014 ' + c.label + '</span>'
+    + '<span style="margin-left:auto;font-size:0.7rem;color:var(--c-muted);font-weight:400">Gemini AI</span>'
+    + '</div>';
+  if (result.wound_assessment) {
+    html += '<div class="ai-section"><div class="ai-section-label">\uD83D\uDD2C Wound Assessment</div><div class="ai-section-text">' + result.wound_assessment + '</div></div>';
+  }
+  if (result.clinical_concern) {
+    html += '<div class="ai-section"><div class="ai-section-label">\u26a0\ufe0f Clinical Concern</div><div class="ai-section-text">' + result.clinical_concern + '</div></div>';
+  }
+  if (result.recommendation) {
+    html += '<div class="ai-section" style="border-bottom:none"><div class="ai-section-label">\u2705 Recommendation</div><div class="ai-section-text" style="font-weight:600">' + result.recommendation + '</div></div>';
+  }
+  html += '<div style="font-size:0.7rem;color:var(--c-muted);margin-top:10px;padding-top:8px;border-top:1px solid ' + c.border + '">'
+    + '\u2695\ufe0f AI-assisted assessment only. Clinical judgement of the treating physician takes precedence.'
+    + '</div></div>';
+  return html;
+}
+
+  // Run AI analysis in background
+  setTimeout(function(){ runAIOnLog(log, markers); }, 200);
+}
+
+// Called after modal renders to run AI in background
+async function runAIOnLog(log, markers){
+  if(!currentUser || currentUser.role!=='doctor') return;
+  log.foot_markers = markers;
+  var pp = null;
+  if(log.patient_id){
+    var ppRes = await db.from('patient_profiles').select('*').eq('id',log.patient_id).single();
+    pp = ppRes.data;
+  }
+  var result = await analyzeLogWithAI(log, pp);
+  var wrap = document.getElementById('ai-card-wrap');
+  if(wrap) wrap.innerHTML = buildAICard(result, false);
+}
+
+/* ── PILOT FEEDBACK ── */
+let fbRating = 0, fbEase = 0, fbUseful = 0;
+const FB_DOCTOR_VIEW_THRESHOLD = 5; // doctor sees prompt after this many log views
+
+function fbKey(suffix){
+  const uid = currentUser ? currentUser.id : 'anon';
+  return 'pilot_fb_' + suffix + '_' + uid;
+}
+function fbAlreadySubmitted(){
+  return currentUser ? localStorage.getItem(fbKey('submitted')) === '1' : true;
+}
+function fbMarkSubmitted(){
+  if(currentUser) localStorage.setItem(fbKey('submitted'),'1');
+}
+function fbIncrementDoctorViews(){
+  if(!currentUser) return 0;
+  const k = fbKey('doc_views');
+  const n = (parseInt(localStorage.getItem(k)||'0',10) || 0) + 1;
+  localStorage.setItem(k, String(n));
+  return n;
+}
+
+function setFbRating(v){
+  fbRating = v;
+  document.querySelectorAll('#fb-stars .fb-star').forEach(b=>{
+    b.classList.toggle('active', parseInt(b.dataset.val,10) <= v);
+  });
+  setErr('fb-rating-err','');
+}
+function setFbEase(v){
+  fbEase = v;
+  document.querySelectorAll('#fb-ease button').forEach(b=>{
+    b.classList.toggle('active', parseInt(b.dataset.val,10) === v);
+  });
+}
+function setFbUseful(v){
+  fbUseful = v;
+  document.querySelectorAll('#fb-useful button').forEach(b=>{
+    b.classList.toggle('active', parseInt(b.dataset.val,10) === v);
+  });
+}
+
+function openFeedbackModal(context){
+  if(!currentUser) return;
+  if(fbAlreadySubmitted()) return;
+  // Customize copy per role
+  const isDoc = currentUser.role === 'doctor';
+  document.getElementById('feedback-title').textContent = isDoc
+    ? 'Quick feedback from a clinician?'
+    : "How's it going so far?";
+  document.getElementById('feedback-intro').textContent = isDoc
+    ? "You've been reviewing patient logs — we'd love to hear your take. Under a minute."
+    : "Great job logging your first entry! You're part of our pilot — your input will shape the final product.";
+  document.getElementById('fb-useful-label').textContent = isDoc
+    ? 'How useful is the recorded data for clinical review?'
+    : 'How useful is this for tracking your condition?';
+  // Reset
+  fbRating = 0; fbEase = 0; fbUseful = 0;
+  document.querySelectorAll('#fb-stars .fb-star').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('#fb-ease button, #fb-useful button').forEach(b=>b.classList.remove('active'));
+  document.getElementById('fb-comments').value = '';
+  setErr('fb-rating-err','');
+  const btn = document.getElementById('fb-submit-btn');
+  btn.textContent = 'Submit feedback'; btn.disabled = false;
+  // Stash context for submission
+  document.getElementById('feedback-modal').dataset.context = context || '';
+  document.getElementById('feedback-modal').classList.add('open');
+}
+
+function closeFeedbackModal(){
+  document.getElementById('feedback-modal').classList.remove('open');
+}
+
+async function submitFeedback(){
+  if(!fbRating){
+    setErr('fb-rating-err','Please tap a star rating');
+    return;
+  }
+  const btn = document.getElementById('fb-submit-btn');
+  btn.innerHTML = '<span class="loader"></span> Sending…'; btn.disabled = true;
+  const payload = {
+    user_id: currentUser.id,
+    role: currentUser.role,
+    rating: fbRating,
+    ease_of_use: fbEase || null,
+    usefulness: fbUseful || null,
+    comments: document.getElementById('fb-comments').value.trim() || null,
+    context: document.getElementById('feedback-modal').dataset.context || null,
+  };
+  try {
+    const {error} = await db.from('pilot_feedback').insert(payload);
+    if(error) throw error;
+    fbMarkSubmitted();
+    closeFeedbackModal();
+    showToast('Thanks for your feedback! 🙏','success');
+  } catch(e){
+    // Still mark locally so we don't annoy the user if DB table missing
+    console.warn('Feedback save failed:', e.message);
+    fbMarkSubmitted();
+    closeFeedbackModal();
+    showToast('Thanks for your feedback!','success');
+  }
+}
+
 function closeLogModal(){document.getElementById('log-modal').classList.remove('open')}
 function closeModal(e){if(e.target===e.currentTarget)closeLogModal()}
 
@@ -1389,6 +1727,13 @@ if(typeof removeImage!=="undefined") window.removeImage=removeImage;
 if(typeof handleFileSelect!=="undefined") window.handleFileSelect=handleFileSelect;
 if(typeof handleSaveLog!=="undefined") window.handleSaveLog=handleSaveLog;
 if(typeof handleSaveLog!=="undefined") window.handleSaveLog=handleSaveLog;
+// Pilot feedback
+if(typeof setFbRating!=="undefined") window.setFbRating=setFbRating;
+if(typeof setFbEase!=="undefined") window.setFbEase=setFbEase;
+if(typeof setFbUseful!=="undefined") window.setFbUseful=setFbUseful;
+if(typeof openFeedbackModal!=="undefined") window.openFeedbackModal=openFeedbackModal;
+if(typeof closeFeedbackModal!=="undefined") window.closeFeedbackModal=closeFeedbackModal;
+if(typeof submitFeedback!=="undefined") window.submitFeedback=submitFeedback;
 
 // Global click handler for log item cards
 document.addEventListener('click', function(e){
