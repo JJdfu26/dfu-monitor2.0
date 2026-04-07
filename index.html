@@ -567,6 +567,88 @@ textarea{resize:vertical;min-height:90px}
       </div>
     </div>
 
+    <div id="page-feedback" class="page">
+      <div class="card">
+        <div class="card-title">💬 Share Your Feedback</div>
+        <p style="font-size:0.92rem;color:var(--c-muted);margin-bottom:20px;line-height:1.55">
+          You're part of our pilot — your input will directly shape how we improve this platform. Thank you for taking a moment to tell us how it's going.
+        </p>
+
+        <div class="fb-field">
+          <label class="fb-label">Overall experience</label>
+          <div class="fb-stars" id="fbp-stars" role="radiogroup" aria-label="Overall rating">
+            <button type="button" class="fb-star" data-val="1" onclick="setFbpRating(1)">★</button>
+            <button type="button" class="fb-star" data-val="2" onclick="setFbpRating(2)">★</button>
+            <button type="button" class="fb-star" data-val="3" onclick="setFbpRating(3)">★</button>
+            <button type="button" class="fb-star" data-val="4" onclick="setFbpRating(4)">★</button>
+            <button type="button" class="fb-star" data-val="5" onclick="setFbpRating(5)">★</button>
+          </div>
+          <div class="fb-err" id="fbp-rating-err"></div>
+        </div>
+
+        <div class="fb-field">
+          <label class="fb-label">How easy is it to use?</label>
+          <div class="fb-scale" id="fbp-ease">
+            <button type="button" data-val="1" onclick="setFbpEase(1)">1</button>
+            <button type="button" data-val="2" onclick="setFbpEase(2)">2</button>
+            <button type="button" data-val="3" onclick="setFbpEase(3)">3</button>
+            <button type="button" data-val="4" onclick="setFbpEase(4)">4</button>
+            <button type="button" data-val="5" onclick="setFbpEase(5)">5</button>
+          </div>
+          <div class="fb-scale-labels"><span>Very hard</span><span>Very easy</span></div>
+        </div>
+
+        <div class="fb-field">
+          <label class="fb-label" id="fbp-useful-label">How useful is this platform?</label>
+          <div class="fb-scale" id="fbp-useful">
+            <button type="button" data-val="1" onclick="setFbpUseful(1)">1</button>
+            <button type="button" data-val="2" onclick="setFbpUseful(2)">2</button>
+            <button type="button" data-val="3" onclick="setFbpUseful(3)">3</button>
+            <button type="button" data-val="4" onclick="setFbpUseful(4)">4</button>
+            <button type="button" data-val="5" onclick="setFbpUseful(5)">5</button>
+          </div>
+          <div class="fb-scale-labels"><span>Not useful</span><span>Very useful</span></div>
+        </div>
+
+        <div class="fb-field">
+          <label class="fb-label" for="fbp-comments">Comments, bugs, or suggestions <span style="color:var(--c-muted);font-weight:400">(optional)</span></label>
+          <textarea id="fbp-comments" rows="4" placeholder="Anything confusing? Anything missing? Tell us…" style="width:100%;padding:10px 12px;border:1px solid var(--c-border);border-radius:var(--r-md);font-family:var(--font-body);font-size:0.9rem;resize:vertical;background:var(--c-surface);color:var(--c-text)"></textarea>
+        </div>
+
+        <button class="btn btn-primary btn-full" onclick="submitFeedbackFromPage()" id="fbp-submit-btn" style="margin-top:10px">Submit feedback</button>
+      </div>
+
+      <div class="card" style="margin-top:16px">
+        <div class="card-title">📬 Contact Us</div>
+        <p style="font-size:0.88rem;color:var(--c-muted);margin-bottom:16px;line-height:1.55">
+          Have a question, want to report an urgent issue, or just want to get in touch? Reach out to the MICE Labs team directly.
+        </p>
+        <div style="display:flex;flex-direction:column;gap:14px">
+          <a href="tel:+918657134618" style="display:flex;align-items:center;gap:14px;padding:14px;background:var(--c-surface);border:1px solid var(--c-border);border-radius:var(--r-md);text-decoration:none;color:var(--c-text);transition:all 0.15s">
+            <div style="font-size:1.6rem">📞</div>
+            <div>
+              <div style="font-size:0.72rem;color:var(--c-muted);text-transform:uppercase;letter-spacing:0.5px;font-weight:600">Phone</div>
+              <div style="font-size:0.95rem;font-weight:600;color:var(--c-primary)">+91 86571 34618</div>
+            </div>
+          </a>
+          <a href="mailto:themicelabs@gmail.com" style="display:flex;align-items:center;gap:14px;padding:14px;background:var(--c-surface);border:1px solid var(--c-border);border-radius:var(--r-md);text-decoration:none;color:var(--c-text);transition:all 0.15s">
+            <div style="font-size:1.6rem">✉️</div>
+            <div>
+              <div style="font-size:0.72rem;color:var(--c-muted);text-transform:uppercase;letter-spacing:0.5px;font-weight:600">Email</div>
+              <div style="font-size:0.95rem;font-weight:600;color:var(--c-primary)">themicelabs@gmail.com</div>
+            </div>
+          </a>
+          <a href="https://www.micelabs.in" target="_blank" rel="noopener" style="display:flex;align-items:center;gap:14px;padding:14px;background:var(--c-surface);border:1px solid var(--c-border);border-radius:var(--r-md);text-decoration:none;color:var(--c-text);transition:all 0.15s">
+            <div style="font-size:1.6rem">🌐</div>
+            <div>
+              <div style="font-size:0.72rem;color:var(--c-muted);text-transform:uppercase;letter-spacing:0.5px;font-weight:600">Website</div>
+              <div style="font-size:0.95rem;font-weight:600;color:var(--c-primary)">www.micelabs.in</div>
+            </div>
+          </a>
+        </div>
+      </div>
+    </div>
+
   </div>
 </div>
 
@@ -858,6 +940,7 @@ async function enterApp(){
     nav.innerHTML=`
       <button class="nav-tab active" data-page="dashboard" onclick="showPage('dashboard')">🏠 <span>Home</span></button>
       <button class="nav-tab" data-page="new-log" onclick="prepareNewLog()">➕ <span>New Log</span></button>
+      <button class="nav-tab" data-page="feedback" onclick="showFeedbackPage()">💬 <span>Feedback</span></button>
       <button class="nav-tab" data-page="profile" onclick="showPage('profile');loadProfile()">👤 <span>Profile</span></button>`;
     await loadPatientProfile();
     await loadDashboard();
@@ -865,6 +948,7 @@ async function enterApp(){
   } else {
     nav.innerHTML=`
       <button class="nav-tab active" data-page="search" onclick="showPage('search')">🔍 <span>Search</span></button>
+      <button class="nav-tab" data-page="feedback" onclick="showFeedbackPage()">💬 <span>Feedback</span></button>
       <button class="nav-tab" data-page="profile" onclick="showPage('profile');loadProfile()">👤 <span>Profile</span></button>`;
     showPage('search');
   }
@@ -1248,7 +1332,7 @@ window.openLogModal=openLogModal; // ensure globally accessible
   // Count doctor log views for pilot feedback trigger
   if(currentUser && currentUser.role==='doctor' && !fbAlreadySubmitted()){
     const views = fbIncrementDoctorViews();
-    if(views === FB_DOCTOR_VIEW_THRESHOLD){
+    if(views >= FB_DOCTOR_VIEW_THRESHOLD){
       setTimeout(()=>openFeedbackModal('doctor_after_'+views+'_views'), 1500);
     }
   }
@@ -1563,6 +1647,83 @@ async function submitFeedback(){
   }
 }
 
+/* ── FEEDBACK PAGE (navbar tab, allows multiple submissions) ── */
+let fbpRating = 0, fbpEase = 0, fbpUseful = 0;
+
+function setFbpRating(v){
+  fbpRating = v;
+  document.querySelectorAll('#fbp-stars .fb-star').forEach(b=>{
+    b.classList.toggle('active', parseInt(b.dataset.val,10) <= v);
+  });
+  setErr('fbp-rating-err','');
+}
+function setFbpEase(v){
+  fbpEase = v;
+  document.querySelectorAll('#fbp-ease button').forEach(b=>{
+    b.classList.toggle('active', parseInt(b.dataset.val,10) === v);
+  });
+}
+function setFbpUseful(v){
+  fbpUseful = v;
+  document.querySelectorAll('#fbp-useful button').forEach(b=>{
+    b.classList.toggle('active', parseInt(b.dataset.val,10) === v);
+  });
+}
+
+function resetFeedbackPageForm(){
+  fbpRating = 0; fbpEase = 0; fbpUseful = 0;
+  document.querySelectorAll('#fbp-stars .fb-star').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('#fbp-ease button, #fbp-useful button').forEach(b=>b.classList.remove('active'));
+  const ta = document.getElementById('fbp-comments'); if(ta) ta.value = '';
+  setErr('fbp-rating-err','');
+  const btn = document.getElementById('fbp-submit-btn');
+  if(btn){ btn.textContent = 'Submit feedback'; btn.disabled = false; }
+}
+
+function showFeedbackPage(){
+  // Tailor the usefulness label per role
+  const isDoc = currentUser && currentUser.role === 'doctor';
+  const lbl = document.getElementById('fbp-useful-label');
+  if(lbl) lbl.textContent = isDoc
+    ? 'How useful is the recorded data for clinical review?'
+    : 'How useful is this for tracking your condition?';
+  resetFeedbackPageForm();
+  showPage('feedback');
+}
+
+async function submitFeedbackFromPage(){
+  if(!fbpRating){
+    setErr('fbp-rating-err','Please tap a star rating');
+    return;
+  }
+  const btn = document.getElementById('fbp-submit-btn');
+  btn.innerHTML = '<span class="loader"></span> Sending…'; btn.disabled = true;
+  const payload = {
+    user_id: currentUser.id,
+    role: currentUser.role,
+    rating: fbpRating,
+    ease_of_use: fbpEase || null,
+    usefulness: fbpUseful || null,
+    comments: document.getElementById('fbp-comments').value.trim() || null,
+    context: 'navbar_tab',
+  };
+  try {
+    const {error} = await db.from('pilot_feedback').insert(payload);
+    if(error) throw error;
+    showToast('Thanks for your feedback! 🙏','success');
+    resetFeedbackPageForm();
+    // Return user to their home tab after a moment
+    setTimeout(()=>{
+      if(currentUser.role === 'patient'){ showPage('dashboard'); }
+      else { showPage('search'); }
+    }, 1200);
+  } catch(e){
+    console.warn('Feedback save failed:', e.message);
+    btn.textContent = 'Submit feedback'; btn.disabled = false;
+    showToast('Could not send feedback. Please try again.','error');
+  }
+}
+
 function closeLogModal(){document.getElementById('log-modal').classList.remove('open')}
 function closeModal(e){if(e.target===e.currentTarget)closeLogModal()}
 
@@ -1735,6 +1896,11 @@ if(typeof setFbUseful!=="undefined") window.setFbUseful=setFbUseful;
 if(typeof openFeedbackModal!=="undefined") window.openFeedbackModal=openFeedbackModal;
 if(typeof closeFeedbackModal!=="undefined") window.closeFeedbackModal=closeFeedbackModal;
 if(typeof submitFeedback!=="undefined") window.submitFeedback=submitFeedback;
+if(typeof setFbpRating!=="undefined") window.setFbpRating=setFbpRating;
+if(typeof setFbpEase!=="undefined") window.setFbpEase=setFbpEase;
+if(typeof setFbpUseful!=="undefined") window.setFbpUseful=setFbpUseful;
+if(typeof showFeedbackPage!=="undefined") window.showFeedbackPage=showFeedbackPage;
+if(typeof submitFeedbackFromPage!=="undefined") window.submitFeedbackFromPage=submitFeedbackFromPage;
 
 // Global click handler for log item cards
 document.addEventListener('click', function(e){
