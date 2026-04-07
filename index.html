@@ -1929,4 +1929,14 @@ if(typeof setFbpUseful!=="undefined") window.setFbpUseful=setFbpUseful;
 if(typeof showFeedbackPage!=="undefined") window.showFeedbackPage=showFeedbackPage;
 if(typeof submitFeedbackFromPage!=="undefined") window.submitFeedbackFromPage=submitFeedbackFromPage;
 
-// Global click handler for log it
+// Global click handler for log item cards
+document.addEventListener('click', function(e){
+  const logItem = e.target.closest('[data-logid]');
+  if(logItem){
+    const logId = logItem.getAttribute('data-logid');
+    if(logId) openLogModal(logId);
+  }
+});
+</script>
+</body>
+</html>
