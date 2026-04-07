@@ -1324,6 +1324,11 @@ window.openLogModal=openLogModal; // ensure globally accessible
     ${log.symptoms?.length?`<div class="modal-section"><div class="modal-section-title">Symptoms</div><div class="log-chips">${log.symptoms.map(s=>`<span class="chip">${s.replace(/_/g,' ')}</span>`).join('')}</div></div>`:''}
     ${imagesHtml}${markersHtml}
     ${log.remarks?`<div class="modal-section"><div class="modal-section-title">Remarks</div><p style="font-size:0.9rem;color:var(--c-text);line-height:1.7;font-style:italic">"${log.remarks}"</p></div>`:''}`;
+
+  // Run AI analysis in background (doctor only)
+  if(currentUser && currentUser.role==='doctor'){
+    setTimeout(function(){ runAIOnLog(log, markers); }, 200);
+  }
 }
 
 /* -- AI ANALYSIS -- */
@@ -1438,10 +1443,6 @@ function buildAICard(result, loading) {
     + '\u2695\ufe0f AI-assisted assessment only. Clinical judgement of the treating physician takes precedence.'
     + '</div></div>';
   return html;
-}
-
-  // Run AI analysis in background
-  setTimeout(function(){ runAIOnLog(log, markers); }, 200);
 }
 
 // Called after modal renders to run AI in background
