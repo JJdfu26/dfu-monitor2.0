@@ -544,6 +544,8 @@ textarea{resize:vertical;min-height:90px}
         <p style="color:var(--c-muted);font-size:0.9rem">Search by patient name to access their health records</p>
       </div>
 
+      <div id="flagged-patients-section"></div>
+
       <div class="search-bar-wrap">
         <span class="search-bar-icon">🔍</span>
         <input type="text" id="search-name" placeholder="Type patient name…"
@@ -753,8 +755,8 @@ textarea{resize:vertical;min-height:90px}
 </div>
 
 <script>
-const isConfigured = SUPABASE_URL !== 'https://tgnjbdcabchvwwgijgfb.supabase.co';
-const GEMINI_KEY = 'AIzaSyB7y1TSAQ-4tOxyyKmPXe3nPGlxdaGaRu8';
+const isConfigured = SUPABASE_URL && SUPABASE_ANON_KEY && SUPABASE_URL.startsWith('https://');
+const GEMINI_KEY = 'AIzaSyChsIb9iJ3AtosrssVmiT5ZNQmJzR8hyH0';
 const GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=' + GEMINI_KEY;
 
 
@@ -781,6 +783,150 @@ const SYMPTOMS = [
   {key:'skin_discoloration',label:'Skin discoloration',icon:'🎨'},{key:'open_wound',label:'Open wound',icon:'🩹'},
 ];
 const PAIN_LABELS = ['No pain','Minimal','Mild','Uncomfortable','Moderate','Noticeable','Moderate severe','Severe','Very severe','Intense','Worst possible'];
+
+/* ── PATIENT FLAGGING ── */
+function evaluateFlagConditions(log, aiResult) {
+  const symptoms = log.symptoms || [];
+  const pain = log.pain_scale || 0;
+  const reasons = [];
+
+  if (aiResult && aiResult.risk_level === 'HIGH') {
+    reasons.push('AI flagged HIGH risk');
+  }
+  if (aiResult && aiResult.risk_level === 'MEDIUM' && pain >= 6) {
+    reasons.push('Medium risk with significant pain (' + pain + '/10)');
+  }
+  if (symptoms.includes('redness') && pain >= 5) {
+    reasons.push('Redness with pain ' + pain + '/10');
+  }
+  if (symptoms.includes('open_wound')) {
+    reasons.push('Open wound reported');
+  }
+  if (symptoms.includes('discharge')) {
+    reasons.push('Discharge reported');
+  }
+
+  return reasons.length ? reasons.join('; ') : null;
+}
+
+async function flagPatientIfNeeded(log, aiResult) {
+  const reason = evaluateFlagConditions(log, aiResult);
+  if (!reason || !currentProfile) return false;
+
+  try {
+    await db.from('patient_profiles').update({
+      is_flagged: true,
+      flag_reason: reason,
+      flagged_at: new Date().toISOString(),
+    }).eq('id', currentProfile.id);
+    return reason;
+  } catch (e) {
+    console.warn('Flag update failed:', e.message);
+    return false;
+  }
+}
+
+function showPatientFlagModal(reason) {
+  const existing = document.getElementById('flag-modal');
+  if (existing) existing.remove();
+
+  const doctorPhone = '+918657134618';
+  const doctorName = currentProfile && currentProfile.consulting_doctor_name
+    ? 'Dr. ' + currentProfile.consulting_doctor_name
+    : 'your doctor';
+
+  const html = `
+    <div class="modal-overlay open" id="flag-modal" style="align-items:center">
+      <div class="modal" style="max-width:440px">
+        <div class="modal-header" style="background:linear-gradient(135deg,#FADBD8,#fff);border-bottom:1px solid #E59A95">
+          <span class="modal-title" style="color:#A63228">⚠️ Please consult your doctor</span>
+        </div>
+        <div class="modal-body">
+          <p style="font-size:0.95rem;line-height:1.6;margin-bottom:14px">
+            Based on what you logged today, we recommend visiting the clinic soon to have your foot examined.
+          </p>
+          <div style="background:#FADBD8;border-radius:var(--r-md);padding:12px 14px;font-size:0.85rem;color:#922B21;margin-bottom:18px">
+            <strong>Why:</strong> ${reason}
+          </div>
+          <p style="font-size:0.88rem;color:var(--c-muted);margin-bottom:18px">
+            Early attention helps prevent complications. Please contact ${doctorName} as soon as possible.
+          </p>
+          <a href="tel:${doctorPhone}" class="btn btn-primary btn-full" style="text-decoration:none;margin-bottom:10px">
+            📞 Call clinic now
+          </a>
+          <button class="btn btn-ghost btn-full" onclick="document.getElementById('flag-modal').remove()">
+            I understand, I'll book a visit
+          </button>
+        </div>
+      </div>
+    </div>`;
+  document.body.insertAdjacentHTML('beforeend', html);
+}
+window.showPatientFlagModal = showPatientFlagModal;
+
+async function loadFlaggedPatients() {
+  const container = document.getElementById('flagged-patients-section');
+  if (!container) return;
+
+  try {
+    const { data: flagged } = await db.from('patient_profiles')
+      .select('*, user:users!inner(id, full_name, email)')
+      .eq('is_flagged', true)
+      .order('flagged_at', { ascending: false })
+      .limit(20);
+
+    if (!flagged || !flagged.length) {
+      container.innerHTML = '';
+      return;
+    }
+
+    container.innerHTML = `
+      <div style="background:linear-gradient(135deg,#FADBD8,#FFF8F7);border:1px solid #E59A95;border-radius:var(--r-lg);padding:18px;margin-bottom:20px">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px">
+          <span style="font-size:1.2rem">⚠️</span>
+          <h3 style="font-family:var(--font-display);font-size:1.15rem;color:#A63228;margin:0">
+            Patients needing attention (${flagged.length})
+          </h3>
+        </div>
+        ${flagged.map(p => {
+          const initials = p.user.full_name.split(' ').map(n=>n[0]).join('').toUpperCase().slice(0,2);
+          const when = p.flagged_at ? new Date(p.flagged_at).toLocaleDateString('en-US',{month:'short',day:'numeric'}) : '';
+          return `<div class="patient-row" style="margin-bottom:8px;border-color:#E59A95" onclick="openPatientDetail('${p.id}','${p.user.full_name}','${p.user.id}')">
+            <div class="patient-row-info">
+              <div class="patient-row-avatar" style="background:#A63228">${initials}</div>
+              <div>
+                <div class="patient-row-name">${p.user.full_name}</div>
+                <div style="font-size:0.78rem;color:#A63228;margin-top:2px">⚠️ ${p.flag_reason || 'Needs review'}</div>
+                <div style="font-size:0.72rem;color:var(--c-muted);margin-top:2px">Flagged ${when}</div>
+              </div>
+            </div>
+            <span class="patient-row-badge" style="background:#A63228;color:#fff">Review →</span>
+          </div>`;
+        }).join('')}
+      </div>`;
+  } catch (e) {
+    console.warn('Could not load flagged patients:', e.message);
+  }
+}
+window.loadFlaggedPatients = loadFlaggedPatients;
+
+async function acknowledgeFlag(patientId) {
+  if (!confirm('Clear this flag? Mark this patient as reviewed.')) return;
+  try {
+    await db.from('patient_profiles').update({
+      is_flagged: false,
+      flag_reason: null,
+      flagged_at: null,
+    }).eq('id', patientId);
+    const banner = document.getElementById('detail-flag-banner');
+    if (banner) banner.remove();
+    showToast('Flag cleared ✓', 'success');
+    if (typeof loadFlaggedPatients === 'function') loadFlaggedPatients();
+  } catch (e) {
+    showToast('Could not clear flag: ' + e.message, 'error');
+  }
+}
+window.acknowledgeFlag = acknowledgeFlag;
 
 /* ── ROUTING ── */
 function showView(id) {
@@ -968,6 +1114,7 @@ async function enterApp(){
     navDesktop.innerHTML=navHtml;
     navMobile.innerHTML=navHtml;
     showPage('search');
+    loadFlaggedPatients();
   }
   showView('app');
 }
@@ -1234,9 +1381,14 @@ async function handleSaveLog(){
 
     showToast('Log saved successfully! ✓','success');
     const wasFirstLog = isFirstLog;
+    // Quick flag evaluation (without AI; AI flag happens when doctor opens log)
+    const flagReason = await flagPatientIfNeeded(log, null);
     resetNewLogForm();
     await loadPatientProfile();
     await loadDashboard();
+    if (flagReason) {
+      setTimeout(() => showPatientFlagModal(flagReason), 800);
+    }
     // Show pilot feedback prompt once, right after first log
     if(wasFirstLog && !fbAlreadySubmitted()){
       setTimeout(()=>openFeedbackModal('after_first_log'), 1200);
@@ -1288,20 +1440,35 @@ async function performSearch(query){
     const profileMap={};
     (profiles||[]).forEach(p=>profileMap[p.user_id]=p);
 
+    // Sort: flagged patients first
+    users.sort((a, b) => {
+      const fa = profileMap[a.id]?.is_flagged ? 1 : 0;
+      const fb = profileMap[b.id]?.is_flagged ? 1 : 0;
+      return fb - fa;
+    });
+
     document.getElementById('search-results-list').innerHTML=users.map(user=>{
       const profile=profileMap[user.id];
       const initials=user.full_name.split(' ').map(n=>n[0]).join('').toUpperCase().slice(0,2);
       const lastLog=profile?.last_log_date?new Date(profile.last_log_date).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}):'No logs yet';
       const doctorName=profile?.consulting_doctor_name?`Dr. ${profile.consulting_doctor_name}`:'';
-      return `<div class="patient-row" onclick="openPatientDetail('${profile?.id||''}','${user.full_name}','${user.id}')">
+      const flagged = profile?.is_flagged;
+      const flagDot = flagged
+        ? `<span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#A63228;margin-right:8px;box-shadow:0 0 0 3px rgba(166,50,40,0.2);vertical-align:middle" title="Needs attention"></span>`
+        : '';
+      const flagBadge = flagged
+        ? `<div style="font-size:0.72rem;color:#A63228;font-weight:600;margin-top:3px">⚠️ ${profile.flag_reason || 'Needs attention'}</div>`
+        : '';
+      return `<div class="patient-row" onclick="openPatientDetail('${profile?.id||''}','${user.full_name}','${user.id}')" ${flagged?'style="border-color:#E59A95;background:linear-gradient(135deg,#FFF8F7,#fff)"':''}>
         <div class="patient-row-info">
           <div class="patient-row-avatar">${initials}</div>
           <div>
-            <div class="patient-row-name">${user.full_name}</div>
+            <div class="patient-row-name">${flagDot}${user.full_name}</div>
             <div class="patient-row-meta">${doctorName?doctorName+' · ':''}Last entry: ${lastLog}</div>
+            ${flagBadge}
           </div>
         </div>
-        <span class="patient-row-badge">View Records →</span>
+        <span class="patient-row-badge" ${flagged?'style="background:#FADBD8;color:#A63228"':''}>View Records →</span>
       </div>`;
     }).join('');
 
@@ -1317,6 +1484,24 @@ async function openPatientDetail(patientId, patientName, userId){
 
   // Load profile for care team info
   const {data:profile}=await db.from('patient_profiles').select('*').eq('id',patientId).single();
+
+  // Show flag banner with acknowledge button
+  if (profile?.is_flagged) {
+    const flagBanner = document.createElement('div');
+    flagBanner.id = 'detail-flag-banner';
+    flagBanner.style.cssText = 'background:linear-gradient(135deg,#FADBD8,#FFF8F7);border:1px solid #E59A95;border-radius:var(--r-lg);padding:16px;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px';
+    flagBanner.innerHTML = `
+      <div>
+        <div style="font-weight:700;color:#A63228;margin-bottom:4px">⚠️ Patient flagged for attention</div>
+        <div style="font-size:0.85rem;color:#922B21">${profile.flag_reason || 'Review recommended'}</div>
+      </div>
+      <button class="btn btn-sm" style="background:#A63228;color:#fff;border:none" onclick="acknowledgeFlag('${profile.id}')">
+        ✓ Acknowledge
+      </button>`;
+    const careDiv = document.getElementById('detail-care-team');
+    careDiv.parentNode.insertBefore(flagBanner, careDiv);
+  }
+
   if(profile?.unit_head_name||profile?.consulting_doctor_name){
     const careDiv=document.getElementById('detail-care-team');
     careDiv.style.display='';
@@ -1558,6 +1743,20 @@ async function runAIOnLog(log, markers){
   var result = await analyzeLogWithAI(log, pp);
   var wrap = document.getElementById('ai-card-wrap');
   if(wrap) wrap.innerHTML = buildAICard(result, false);
+
+  // Auto-flag based on AI result if patient not already flagged
+  if (result && !result.error && pp && !pp.is_flagged) {
+    const reason = evaluateFlagConditions(log, result);
+    if (reason) {
+      try {
+        await db.from('patient_profiles').update({
+          is_flagged: true,
+          flag_reason: reason,
+          flagged_at: new Date().toISOString(),
+        }).eq('id', pp.id);
+      } catch(e) { console.warn('AI flag update failed:', e.message); }
+    }
+  }
 }
 
 /* ── PILOT FEEDBACK ── */
