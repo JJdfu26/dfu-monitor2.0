@@ -1,74 +1,66 @@
 /*
- * DFU Monitor — Service Worker
- * Enables PWA installation and basic offline support
+ * DFU Monitor — Service Worker (Fixed)
+ * Supabase requests are NEVER intercepted — always go directly to network.
  */
 
-const CACHE_NAME = 'dfu-monitor-v1';
+const CACHE_NAME = 'dfu-monitor-v2';
 
-// Files to cache for offline use
 const STATIC_ASSETS = [
   './',
   './index.html',
   './manifest.json',
 ];
 
-// ── Install: cache static assets ──────────────────────────────────────
+// ── Install ──────────────────────────────────────────────────────────
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(STATIC_ASSETS);
-    })
+    caches.open(CACHE_NAME).then((cache) => cache.addAll(STATIC_ASSETS))
   );
-  // Take over immediately without waiting
   self.skipWaiting();
 });
 
-// ── Activate: clean up old caches ─────────────────────────────────────
+// ── Activate: clean old caches ───────────────────────────────────────
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((keys) =>
-      Promise.all(
-        keys
-          .filter((key) => key !== CACHE_NAME)
-          .map((key) => caches.delete(key))
-      )
+      Promise.all(keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k)))
     )
   );
   self.clients.claim();
 });
 
-// ── Fetch: serve from cache, fall back to network ─────────────────────
+// ── Fetch ─────────────────────────────────────────────────────────────
 self.addEventListener('fetch', (event) => {
-  const url = new URL(event.request.url);
+  const url = event.request.url;
 
-  // Always fetch Supabase API calls from network (never cache)
-  if (url.hostname.includes('supabase.co')) {
-    event.respondWith(fetch(event.request));
+  // ALWAYS bypass service worker for these — go straight to network
+  if (
+    url.includes('supabase.co') ||
+    url.includes('supabase.io') ||
+    url.includes('googleapis.com') ||
+    url.includes('groq.com') ||
+    url.includes('generativelanguage') ||
+    event.request.method !== 'GET'
+  ) {
+    // Do NOT call event.respondWith() — browser handles it normally
     return;
   }
 
-  // For Google Fonts — network first, fall back to cache
-  if (url.hostname.includes('fonts.googleapis.com') || url.hostname.includes('fonts.gstatic.com')) {
+  // For Google Fonts only — cache with network fallback
+  if (url.includes('fonts.gstatic.com') || url.includes('fonts.googleapis.com')) {
     event.respondWith(
-      fetch(event.request)
-        .then((response) => {
-          const clone = response.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
-          return response;
-        })
-        .catch(() => caches.match(event.request))
+      caches.match(event.request).then(cached => cached || fetch(event.request))
     );
     return;
   }
 
-  // For everything else — cache first, fall back to network
+  // For app files — cache first, network fallback
   event.respondWith(
-    caches.match(event.request).then((cached) => {
-      return cached || fetch(event.request).then((response) => {
-        // Cache successful GET responses
-        if (event.request.method === 'GET' && response.status === 200) {
+    caches.match(event.request).then(cached => {
+      return cached || fetch(event.request).then(response => {
+        if (response && response.status === 200) {
           const clone = response.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
+          caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
         }
         return response;
       });
